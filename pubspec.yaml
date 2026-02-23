@@ -1,0 +1,54 @@
+name: budget_buddy
+description: AI 스마트 가계부 - 사회초년생을 위한 금융 관리 앱
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  
+  # 상태 관리
+  provider: 6.1.5+1
+  
+  # 로컬 스토리지
+  shared_preferences: 2.5.3
+  hive: 2.2.3
+  hive_flutter: 1.1.0
+  
+  # UI 컴포넌트
+  fl_chart: ^0.69.0
+  percent_indicator: ^4.2.3
+  
+  # 날짜/시간
+  intl: ^0.19.0
+  
+  # 아이콘
+  font_awesome_flutter: ^10.7.0
+  
+  # HTTP 통신
+  http: 1.5.0
+  
+  # AdMob 광고 (수익화)
+  google_mobile_ads: 5.3.1
+  
+  # 로컬 알림
+  flutter_local_notifications: ^18.0.0
+  
+  # 유틸
+  uuid: ^4.5.1
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
