@@ -244,7 +244,7 @@ class TransactionListTile extends StatelessWidget {
       final man = (amount / 10000).floor();
       final rem = (amount % 10000).toInt();
       if (rem == 0) return '$man만원';
-      return '$man만 ${rem}원';
+      return '$man만 ${rem}원'; // ignore: unnecessary_brace_in_string_interps
     }
     return '${amount.toInt()}원';
   }
