@@ -122,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
                       ]),
                       const SizedBox(height: 16),
                       _buildSettingsGroup('앱 정보', [
-                        _SettingsItem(Icons.info, '버전 정보', 'v1.0.0'),
+                        _SettingsItem(Icons.info, '버전 정보', provider.appConfig['app_version']?.toString() ?? 'v1.0.0'),
                         _SettingsItem(Icons.privacy_tip, '개인정보처리방침', ''),
                         _SettingsItem(Icons.description, '이용약관', ''),
                       ]),
@@ -327,22 +327,25 @@ class _PremiumBottomSheet extends StatefulWidget {
 class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
   int _selectedPlan = 1; // 0: monthly, 1: yearly
 
-  final List<Map<String, dynamic>> _plans = [
-    {
-      'type': '월간 구독',
-      'price': '4,900원',
-      'period': '/ 월',
-      'badge': '',
-      'total': '연 58,800원',
-    },
-    {
-      'type': '연간 구독',
-      'price': '39,900원',
-      'period': '/ 년',
-      'badge': '32% 할인',
-      'total': '월 3,325원',
-    },
-  ];
+  // API에서 가져온 플랜 (provider.plans 사용)
+  List<Map<String, dynamic>> get _plans {
+    final apiPlans = widget.provider.plans;
+    if (apiPlans.isNotEmpty) {
+      return apiPlans.map((p) => {
+        'type': p['name'] ?? '',
+        'price': '${(p['price'] as num?)?.toInt().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},') ?? '0'}원',
+        'period': p['period'] ?? '',
+        'badge': p['badge'] ?? '',
+        'total': p['sub_text'] ?? '',
+        'plan_type': p['plan_type'] ?? '',
+      }).toList();
+    }
+    // 폴백 (API 미연결 시)
+    return [
+      {'type': '월간 구독', 'price': '4,900원', 'period': '/ 월', 'badge': '', 'total': '연 58,800원', 'plan_type': 'monthly'},
+      {'type': '연간 구독', 'price': '39,900원', 'period': '/ 년', 'badge': '32% 할인', 'total': '월 3,325원', 'plan_type': 'yearly'},
+    ];
+  }
 
   final List<Map<String, dynamic>> _features = [
     {'icon': '🤖', 'title': '고급 AI 소비 분석', 'desc': '더 정밀한 소비 패턴 분석'},
