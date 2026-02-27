@@ -233,6 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildHeaderStat(String label, double amount, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 8,
@@ -245,11 +246,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Text(label,
                 style: const TextStyle(color: Colors.white70, fontSize: 11)),
-            Text(_formatAmount(amount),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              _formatAmount(amount),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ],
@@ -298,7 +302,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(
       String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -311,18 +315,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color)),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: color)),
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11, color: AppTheme.textSecondary)),
+          Text(
+            label,
+            style: const TextStyle(
+                fontSize: 10, color: AppTheme.textSecondary),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ],
       ),
     );
@@ -511,20 +523,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(budget.category,
+                      Flexible(
+                        flex: 2,
+                        child: Text(
+                          budget.category,
                           style: const TextStyle(
                               fontSize: 13,
                               color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w500)),
-                      Text(
-                        '${_formatAmount(budget.spent)} / ${_formatAmount(budget.limit)}',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: isOver
-                                ? AppTheme.dangerRed
-                                : AppTheme.textSecondary,
-                            fontWeight:
-                                isOver ? FontWeight.bold : FontWeight.normal),
+                              fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        flex: 3,
+                        child: Text(
+                          '${_formatAmount(budget.spent)} / ${_formatAmount(budget.limit)}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: isOver
+                                  ? AppTheme.dangerRed
+                                  : AppTheme.textSecondary,
+                              fontWeight:
+                                  isOver ? FontWeight.bold : FontWeight.normal),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                        ),
                       ),
                     ],
                   ),

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/ad_banner_widget.dart';
+import '../utils/app_env.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -126,6 +128,11 @@ class SettingsScreen extends StatelessWidget {
                         _SettingsItem(Icons.privacy_tip, '개인정보처리방침', ''),
                         _SettingsItem(Icons.description, '이용약관', ''),
                       ]),
+                      const SizedBox(height: 16),
+
+                      // ── DEV 전용 개발자 패널 ──────────────────────────
+                      if (AppEnv.isDev) _buildDevPanel(context, provider),
+
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -307,6 +314,253 @@ class SettingsScreen extends StatelessWidget {
       builder: (ctx) => _PremiumBottomSheet(provider: provider),
     );
   }
+
+  // ── DEV 전용 개발자 패널 ─────────────────────────────────────
+  Widget _buildDevPanel(BuildContext context, TransactionProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD600),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'DEV',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5D4037),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '개발자 도구',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF9C4),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFFD600), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            children: [
+              // 환경 정보 행
+              _buildDevInfoTile(
+                Icons.developer_mode,
+                '현재 환경',
+                AppEnv.fullLabel,
+                const Color(0xFFFFD600),
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              _buildDevInfoTile(
+                Icons.ad_units,
+                '광고 모드',
+                AppEnv.useMockAds ? 'Mock (DEV)' : '실제 AdMob (PROD)',
+                AppEnv.useMockAds ? Colors.orange : AppTheme.successGreen,
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              _buildDevInfoTile(
+                Icons.cloud_done,
+                'API 서버',
+                provider.appConfig.isNotEmpty ? '연결됨 ✅' : '연결 안됨 ❌',
+                provider.appConfig.isNotEmpty ? AppTheme.successGreen : AppTheme.dangerRed,
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              _buildDevInfoTile(
+                Icons.workspace_premium,
+                '현재 플랜',
+                provider.isPremium ? 'Premium ⭐' : '무료 플랜',
+                provider.isPremium ? const Color(0xFFFFD700) : AppTheme.textSecondary,
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              // 프리미엄 토글 버튼
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD600).withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.toggle_on, color: Color(0xFF5D4037), size: 18),
+                ),
+                title: const Text(
+                  '[DEV] 프리미엄 토글',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF5D4037)),
+                ),
+                subtitle: const Text(
+                  '실제 결제 없이 프리미엄 테스트',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF8D6E63)),
+                ),
+                trailing: Switch(
+                  value: provider.isPremium,
+                  onChanged: (val) => provider.setPremium(val),
+                  activeThumbColor: AppTheme.primaryBlue,
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              // Mock 광고 테스트 버튼
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD600).withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.play_circle_outline, color: Color(0xFF5D4037), size: 18),
+                ),
+                title: const Text(
+                  '[DEV] 전면광고 테스트',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF5D4037)),
+                ),
+                subtitle: const Text(
+                  'Mock 전면 광고 다이얼로그 확인',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF8D6E63)),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Color(0xFF8D6E63), size: 20),
+                onTap: () {
+                  if (!provider.isPremium) {
+                    AdInterstitialService.show(context, isPremium: false);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('프리미엄 상태: 전면광고 표시 안됨'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const Divider(height: 1, color: Color(0xFFFFD600)),
+              // API 설정값 보기
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD600).withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.settings_ethernet, color: Color(0xFF5D4037), size: 18),
+                ),
+                title: const Text(
+                  '[DEV] API 설정값',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF5D4037)),
+                ),
+                subtitle: Text(
+                  '로드된 설정: ${provider.appConfig.length}개',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF8D6E63)),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Color(0xFF8D6E63), size: 20),
+                onTap: () => _showApiConfigDialog(context, provider),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDevInfoTile(IconData icon, String label, String value, Color valueColor) {
+    return ListTile(
+      dense: true,
+      leading: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFD600).withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, color: const Color(0xFF5D4037), size: 16),
+      ),
+      title: Text(label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF5D4037), fontWeight: FontWeight.w500)),
+      trailing: Text(
+        value,
+        style: TextStyle(fontSize: 12, color: valueColor, fontWeight: FontWeight.bold),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  void _showApiConfigDialog(BuildContext context, TransactionProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.settings_ethernet, color: Color(0xFFFFD600)),
+            SizedBox(width: 8),
+            Text('API 설정값', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: provider.appConfig.isEmpty
+              ? const Center(child: Text('API에서 설정을 불러오지 못했습니다.'))
+              : ListView(
+                  children: provider.appConfig.entries.map((e) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              e.key,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              e.value?.toString() ?? 'null',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textPrimary),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SettingsItem {
@@ -356,6 +610,18 @@ class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
     {'icon': '📤', 'title': '데이터 내보내기', 'desc': 'Excel/PDF 내보내기'},
     {'icon': '🎨', 'title': '프리미엄 테마', 'desc': '다양한 앱 테마 선택'},
   ];
+
+  /// API 플랜 정보 기반으로 구독 시작 버튼 텍스트를 생성
+  String _buildStartButtonText() {
+    final plan = _plans[_selectedPlan.clamp(0, _plans.length - 1)];
+    final price = plan['price'] ?? '';
+    final period = plan['period'] ?? '';
+    final badge = plan['badge'] ?? '';
+    if (badge.isNotEmpty) {
+      return '$price$period 시작 ($badge)';
+    }
+    return '$price$period 시작하기';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -555,7 +821,12 @@ class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
                                   Icon(Icons.workspace_premium,
                                       color: Color(0xFFFFD700), size: 18),
                                   SizedBox(width: 8),
-                                  Text('프리미엄으로 업그레이드되었습니다! 🎉'),
+                                  Flexible(
+                                    child: Text(
+                                      '프리미엄으로 업그레이드되었습니다! 🎉',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ],
                               ),
                               backgroundColor: AppTheme.primaryBlue,
@@ -571,12 +842,13 @@ class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: Text(
-                        _selectedPlan == 0
-                            ? '월 4,900원으로 시작하기'
-                            : '연 39,900원으로 시작하기 (32% 절약)',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _buildStartButtonText(),
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
@@ -587,6 +859,8 @@ class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
                     style: TextStyle(
                         fontSize: 12, color: AppTheme.textSecondary),
                     textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                   const SizedBox(height: 30),
                 ],

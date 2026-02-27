@@ -164,13 +164,16 @@ class _BankScreenState extends State<BankScreen> {
                 style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
           ]),
         ),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(_formatAmount(_balances[bankId] ?? 0),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary)),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+          Text(
+            _formatAmount(_balances[bankId] ?? 0),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimary),
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 4),
           TextButton(
             onPressed: () => _unlinkBank(bank),
-            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
             child: const Text('연동 해제', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
           ),
         ]),
@@ -229,16 +232,28 @@ class _BankScreenState extends State<BankScreen> {
           ),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(bank['icon'] as String? ?? '🏦', style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 8),
-          Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(bank['name'] as String,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            Text(isLinked ? '연동됨' : '연동하기',
-                style: TextStyle(fontSize: 11, color: isLinked ? AppTheme.successGreen : AppTheme.primaryBlue)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text(bank['icon'] as String? ?? '🏦', style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  bank['name'] as String,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                Text(
+                  isLinked ? '연동됨' : '연동하기',
+                  style: TextStyle(fontSize: 10, color: isLinked ? AppTheme.successGreen : AppTheme.primaryBlue),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ]),
+            ),
           ]),
-        ]),
+        ),
       ),
     );
   }

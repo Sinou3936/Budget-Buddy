@@ -9,6 +9,7 @@ import 'screens/stats_screen.dart';
 import 'screens/bank_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/ad_banner_widget.dart';
+import 'widgets/common_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,11 +31,13 @@ class BudgetBuddyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
       ],
-      child: MaterialApp(
-        title: 'Budget Buddy',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: const MainNavigationScreen(),
+      child: DevEnvBanner(
+        child: MaterialApp(
+          title: 'Budget Buddy',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          home: const MainNavigationScreen(),
+        ),
       ),
     );
   }

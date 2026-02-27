@@ -112,7 +112,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildSummaryCard(
       String title, double amount, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -126,16 +126,23 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            _formatShort(amount),
-            style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.bold, color: color),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _formatShort(amount),
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.bold, color: color),
+            ),
           ),
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 11, color: AppTheme.textSecondary)),
+          Text(
+            title,
+            style: const TextStyle(
+                fontSize: 10, color: AppTheme.textSecondary),
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -143,7 +150,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Widget _buildSavingRateCard(double rate) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -157,20 +164,26 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.savings, color: AppTheme.primaryBlue, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            '${rate.toStringAsFixed(0)}%',
-            style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: rate >= 20
-                    ? AppTheme.successGreen
-                    : AppTheme.warningOrange),
+          const Icon(Icons.savings, color: AppTheme.primaryBlue, size: 18),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${rate.toStringAsFixed(0)}%',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: rate >= 20
+                      ? AppTheme.successGreen
+                      : AppTheme.warningOrange),
+            ),
           ),
-          const Text('저축률',
-              style:
-                  TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+          const Text(
+            '저축률',
+            style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
