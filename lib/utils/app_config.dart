@@ -8,15 +8,24 @@ class AppConfig {
   AppConfig._();
 
   // ─── API Base URL ───────────────────────────────────────────────────
-  // 웹 빌드 시 같은 호스트의 3000 포트로 라우팅
-  // kIsWeb이면 현재 페이지 origin의 포트만 3000으로 변경
+  //
+  //  📱 Android Emulator : http://10.0.2.2:3000
+  //  📱 실기기(로컬 Wi-Fi) : http://192.168.x.x:3000  ← PC IP로 교체
+  //  📱 실기기(ngrok)     : https://xxxx.ngrok-free.app
+  //  🌐 Web 빌드         : 현재 호스트의 :3000 포트 자동 계산
+  //
+  // ─── 실기기 테스트 시 아래 값을 수정하세요 ──────────────────────────
+  /// Wi-Fi 직접 연결: PC의 로컬 IP 입력 (ipconfig / ifconfig로 확인)
+  // ignore: unused_field
+  static const String _localIp = '192.168.1.100';  // ← 본인 PC IP로 교체
+
+  /// ngrok 사용 시: ngrok URL 입력 (https://xxxx.ngrok-free.app)
+  static const String _ngrokUrl = '';  // 비어 있으면 _localIp 사용
+
   static String get apiBaseUrl {
     if (kIsWeb) {
       // 브라우저 환경: window.location.origin의 포트를 3000으로 교체
-      // e.g. https://5060-xxx.sandbox.novita.ai → https://3000-xxx.sandbox.novita.ai
-      // dart:html을 직접 import하면 non-web에서 에러나므로 Uri 사용
       try {
-        // ignore: undefined_identifier
         final origin = Uri.base;
         final apiOrigin = origin.replace(port: 3000);
         return apiOrigin.toString().replaceAll(RegExp(r'/$'), '');
@@ -24,7 +33,12 @@ class AppConfig {
         return 'http://localhost:3000';
       }
     }
-    return 'http://10.0.2.2:3000'; // Android Emulator → host 3000
+    // Android 에뮬레이터: 10.0.2.2 = host machine
+    // Android 실기기: ngrok URL 또는 로컬 IP
+    if (_ngrokUrl.isNotEmpty) return _ngrokUrl;
+    return 'http://10.0.2.2:3000'; // 에뮬레이터 기본값
+    // 실기기 사용 시 아래 줄 주석 해제:
+    // return 'http://$_localIp:3000';
   }
 
   // ─── App Constants ──────────────────────────────────────────────────

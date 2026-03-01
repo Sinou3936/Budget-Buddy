@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'theme/app_theme.dart';
 import 'providers/transaction_provider.dart';
 import 'screens/dashboard_screen.dart';
@@ -10,6 +11,7 @@ import 'screens/bank_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/ad_banner_widget.dart';
 import 'widgets/common_widgets.dart';
+import 'utils/app_env.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,11 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+  // AdMob 초기화 (DEV에서는 테스트 ID 사용, PROD에서는 실제 ID)
+  // Web 환경에서는 AdMob 미지원이므로 Android에서만 초기화
+  if (!AppEnv.useMockAds) {
+    await MobileAds.instance.initialize();
+  }
   runApp(const BudgetBuddyApp());
 }
 

@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 인터넷 권한 (API 서버 통신 필수) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 네트워크 상태 확인 (선택) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <application
-        android:label="budget_buddy"
+        android:label="Budget Buddy"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
