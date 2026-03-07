@@ -268,38 +268,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: GradientHeader(
-                  height: 160,
+                  height: 140,
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('설정',
                               style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 22,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold)),
                           const Spacer(),
                           Row(
                             children: [
                               Container(
-                                width: 54,
-                                height: 54,
+                                width: 46,
+                                height: 46,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(Icons.person,
-                                    color: Colors.white, size: 28),
+                                    color: Colors.white, size: 24),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text('반가워요! 👋',
                                       style: TextStyle(
-                                          color: Colors.white, fontSize: 16,
+                                          color: Colors.white, fontSize: 14,
                                           fontWeight: FontWeight.bold)),
                                   Row(
                                     children: [

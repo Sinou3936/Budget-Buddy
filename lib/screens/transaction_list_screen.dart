@@ -31,10 +31,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: GradientHeader(
-                  height: 140,
+                  height: 110,
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -42,15 +42,15 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             '거래 내역',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             '이번 달 ${provider.currentMonthTransactions.length}건의 거래',
                             style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 13),
+                                fontSize: 12),
                           ),
                         ],
                       ),

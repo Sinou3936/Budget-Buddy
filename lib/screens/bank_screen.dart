@@ -41,31 +41,31 @@ class _BankScreenState extends State<BankScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: GradientHeader(
-                  height: 180,
+                  height: 150,
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('은행 연동',
-                              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          Text('총 자산', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
+                          Text('총 자산', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                          const SizedBox(height: 2),
                           Text(_formatAmount(totalBalance),
-                              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
+                              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Row(children: [
-                              Icon(Icons.lock_outline, color: Colors.white, size: 14),
+                              Icon(Icons.lock_outline, color: Colors.white, size: 12),
                               SizedBox(width: 4),
-                              Text('256-bit 암호화 보호', style: TextStyle(color: Colors.white, fontSize: 12)),
+                              Text('256-bit 암호화 보호', style: TextStyle(color: Colors.white, fontSize: 11)),
                             ]),
                           ),
                         ],

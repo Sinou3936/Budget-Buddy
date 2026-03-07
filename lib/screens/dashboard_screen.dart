@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
-import 'add_transaction_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -142,16 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const AddTransactionScreen()),
-            ),
-            icon: const Icon(Icons.add),
-            label: const Text('지출 추가',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
+
         );
       },
     );
@@ -163,10 +153,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return SliverToBoxAdapter(
       child: GradientHeader(
-        height: 230,
+        height: 200,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -179,41 +169,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Text(
                           '${now.year}년 ${months[now.month - 1]}',
                           style: const TextStyle(
-                              color: Colors.white70, fontSize: 14),
+                              color: Colors.white70, fontSize: 12),
                         ),
                         const Text(
                           'Budget Buddy',
                           style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.notifications_outlined,
-                          color: Colors.white, size: 24),
+                          color: Colors.white, size: 20),
                     ),
                   ],
                 ),
                 const Spacer(),
                 // 잔액 표시
                 const Text('이번 달 잔액',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 4),
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 3),
                 Text(
                   _formatAmount(provider.totalBalance),
                   style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     _buildHeaderStat(
@@ -302,14 +292,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(
       String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -317,13 +307,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 5),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(value,
                 style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: color)),
           ),

@@ -23,10 +23,10 @@ class _StatsScreenState extends State<StatsScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: GradientHeader(
-                  height: 130,
+                  height: 110,
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -34,15 +34,15 @@ class _StatsScreenState extends State<StatsScreen> {
                             '소비 분석',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 22,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             'AI가 분석한 나의 소비 패턴',
                             style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 13),
+                                fontSize: 12),
                           ),
                         ],
                       ),

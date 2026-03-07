@@ -9,6 +9,7 @@ import 'screens/transaction_list_screen.dart';
 import 'screens/stats_screen.dart';
 import 'screens/bank_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/add_transaction_screen.dart';
 import 'widgets/ad_banner_widget.dart';
 import 'widgets/common_widgets.dart';
 import 'utils/app_env.dart';
@@ -21,8 +22,6 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
-  // AdMob 초기화 (DEV에서는 테스트 ID 사용, PROD에서는 실제 ID)
-  // Web 환경에서는 AdMob 미지원이므로 Android에서만 초기화
   if (!AppEnv.useMockAds) {
     await MobileAds.instance.initialize();
   }
@@ -68,6 +67,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const SettingsScreen(),
   ];
 
+  void _openAddTransaction() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
@@ -77,43 +83,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             index: _currentIndex,
             children: _screens,
           ),
+          // ── 중앙 돌출 FAB ─────────────────────────────────────
+          floatingActionButton: FloatingActionButton(
+            onPressed: _openAddTransaction,
+            backgroundColor: AppTheme.primaryBlue,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            shape: const CircleBorder(),
+            child: const Icon(Icons.add, size: 26),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          // ── 하단 네비게이션 ────────────────────────────────────
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 광고 배너 (수익화 - 무료 플랜)
+              // 광고 배너 (무료 플랜)
               AdBannerWidget(isPremium: provider.isPremium),
-              // 하단 네비게이션
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: BottomNavigationBar(
-                    currentIndex: _currentIndex,
-                    onTap: (idx) => setState(() => _currentIndex = idx),
-                    type: BottomNavigationBarType.fixed,
-                    selectedItemColor: AppTheme.primaryBlue,
-                    unselectedItemColor: AppTheme.textLight,
-                    selectedFontSize: 11,
-                    unselectedFontSize: 11,
-                    elevation: 0,
-                    backgroundColor: Colors.transparent,
-                    items: [
-                      _buildNavItem(Icons.home_rounded, Icons.home_outlined, '홈', 0),
-                      _buildNavItem(Icons.receipt_long_rounded, Icons.receipt_long_outlined, '내역', 1),
-                      _buildNavItem(Icons.bar_chart_rounded, Icons.bar_chart_outlined, '분석', 2),
-                      _buildNavItem(Icons.account_balance_rounded, Icons.account_balance_outlined, '은행', 3),
-                      _buildNavItem(Icons.settings_rounded, Icons.settings_outlined, '설정', 4),
-                    ],
-                  ),
-                ),
+              _BottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: (i) => setState(() => _currentIndex = i),
               ),
             ],
           ),
@@ -121,23 +110,103 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       },
     );
   }
+}
 
-  BottomNavigationBarItem _buildNavItem(
-      IconData activeIcon, IconData inactiveIcon, String label, int index) {
-    final isActive = _currentIndex == index;
-    return BottomNavigationBarItem(
-      icon: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppTheme.primaryBlue.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(isActive ? activeIcon : inactiveIcon),
+// ── 하단 네비게이션 바 (중앙 FAB 자리 빈칸 포함) ─────────────────
+class _BottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _BottomNavBar({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      label: label,
+      child: SafeArea(
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              // 왼쪽 2개
+              _NavItem(icon: Icons.home_rounded,    outlineIcon: Icons.home_outlined,              label: '홈',  index: 0, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.receipt_long_rounded, outlineIcon: Icons.receipt_long_outlined, label: '내역', index: 1, currentIndex: currentIndex, onTap: onTap),
+              // 중앙 FAB 빈 공간
+              const Expanded(child: SizedBox()),
+              // 오른쪽 2개
+              _NavItem(icon: Icons.bar_chart_rounded,       outlineIcon: Icons.bar_chart_outlined,        label: '분석', index: 2, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.settings_rounded,        outlineIcon: Icons.settings_outlined,         label: '설정', index: 4, currentIndex: currentIndex, onTap: onTap),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData outlineIcon;
+  final String label;
+  final int index;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.outlineIcon,
+    required this.label,
+    required this.index,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = currentIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onTap(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppTheme.primaryBlue.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isActive ? icon : outlineIcon,
+                size: 22,
+                color: isActive ? AppTheme.primaryBlue : AppTheme.textLight,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppTheme.primaryBlue : AppTheme.textLight,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

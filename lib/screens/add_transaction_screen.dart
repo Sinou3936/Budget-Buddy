@@ -162,13 +162,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 제목 입력
             _buildSectionLabel('내용', Icons.edit),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             TextFormField(
               controller: _titleController,
               onChanged: _onTitleChanged,
@@ -215,32 +215,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // 금액 입력
             _buildSectionLabel('금액', Icons.attach_money),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
               decoration: const InputDecoration(
                 hintText: '0',
                 prefixText: '₩ ',
                 prefixStyle: TextStyle(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryBlue),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // 카테고리 선택
             _buildSectionLabel('카테고리', Icons.category),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -252,39 +252,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 return GestureDetector(
                   onTap: () => setState(() => _selectedCategory = category),
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                        horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? color.withValues(alpha: 0.15)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected
-                            ? color
-                            : AppTheme.dividerColor,
-                        width: isSelected ? 2 : 1,
+                        color: isSelected ? color : AppTheme.dividerColor,
+                        width: isSelected ? 1.5 : 1,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(icon,
-                            size: 16,
-                            color:
-                                isSelected ? color : AppTheme.textSecondary),
-                        const SizedBox(width: 6),
+                            size: 14,
+                            color: isSelected ? color : AppTheme.textSecondary),
+                        const SizedBox(width: 5),
                         Text(
                           category,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
-                            color: isSelected
-                                ? color
-                                : AppTheme.textSecondary,
+                            color: isSelected ? color : AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -294,43 +289,43 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               }).toList(),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // 날짜 선택
             _buildSectionLabel('날짜', Icons.calendar_today),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             GestureDetector(
               onTap: _selectDate,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.dividerColor),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.calendar_today,
-                        color: AppTheme.primaryBlue, size: 20),
-                    const SizedBox(width: 12),
+                        color: AppTheme.primaryBlue, size: 18),
+                    const SizedBox(width: 10),
                     Text(
                       '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
                       style: const TextStyle(
-                          fontSize: 15, color: AppTheme.textPrimary),
+                          fontSize: 14, color: AppTheme.textPrimary),
                     ),
                     const Spacer(),
                     const Icon(Icons.chevron_right,
-                        color: AppTheme.textLight),
+                        color: AppTheme.textLight, size: 18),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // 메모
             _buildSectionLabel('메모 (선택)', Icons.note),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             TextFormField(
               controller: _memoController,
               maxLines: 2,
@@ -340,28 +335,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // 저장 버튼
             SizedBox(
               width: double.infinity,
-              height: 54,
+              height: 50,
               child: ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.save, size: 20),
+                    const Icon(Icons.save, size: 18),
                     const SizedBox(width: 8),
                     Text(
                       '${_selectedType == 'expense' ? '지출' : '수입'} 저장',
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                          fontSize: 15, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -376,12 +371,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget _buildSectionLabel(String label, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppTheme.primaryBlue),
-        const SizedBox(width: 6),
+        Icon(icon, size: 14, color: AppTheme.primaryBlue),
+        const SizedBox(width: 5),
         Text(
           label,
           style: const TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppTheme.textPrimary),
         ),
