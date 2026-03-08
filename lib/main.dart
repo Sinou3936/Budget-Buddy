@@ -138,13 +138,14 @@ class _BottomNavBar extends StatelessWidget {
           child: Row(
             children: [
               // 왼쪽 2개
-              _NavItem(icon: Icons.home_rounded,    outlineIcon: Icons.home_outlined,              label: '홈',  index: 0, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.receipt_long_rounded, outlineIcon: Icons.receipt_long_outlined, label: '내역', index: 1, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.home_rounded,         outlineIcon: Icons.home_outlined,          label: '홈',  index: 0, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.receipt_long_rounded, outlineIcon: Icons.receipt_long_outlined,  label: '내역', index: 1, currentIndex: currentIndex, onTap: onTap),
               // 중앙 FAB 빈 공간
               const Expanded(child: SizedBox()),
-              // 오른쪽 2개
-              _NavItem(icon: Icons.bar_chart_rounded,       outlineIcon: Icons.bar_chart_outlined,        label: '분석', index: 2, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.settings_rounded,        outlineIcon: Icons.settings_outlined,         label: '설정', index: 4, currentIndex: currentIndex, onTap: onTap),
+              // 오른쪽 3개 → 은행 추가
+              _NavItem(icon: Icons.bar_chart_rounded,        outlineIcon: Icons.bar_chart_outlined,        label: '분석', index: 2, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.account_balance_rounded,  outlineIcon: Icons.account_balance_outlined,  label: '은행', index: 3, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.settings_rounded,         outlineIcon: Icons.settings_outlined,         label: '설정', index: 4, currentIndex: currentIndex, onTap: onTap),
             ],
           ),
         ),
