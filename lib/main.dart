@@ -78,31 +78,43 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, provider, _) {
+        // 광고 배너 높이 계산 (무료 플랜이면 50px, 프리미엄이면 0)
+        final adHeight = provider.isPremium ? 0.0 : 50.0;
+        // 네비바 + 광고 + 추가버튼 높이를 합산해 body 여백으로 사용
+        const navBarHeight = 58.0;
+        const addBtnBottom = 8.0; // 네비바 위 간격
+
         return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
-          // ── 중앙 돌출 FAB ─────────────────────────────────────
-          floatingActionButton: FloatingActionButton(
-            onPressed: _openAddTransaction,
-            backgroundColor: AppTheme.primaryBlue,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add, size: 26),
-          ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          // ── 하단 네비게이션 ────────────────────────────────────
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
+          body: Stack(
             children: [
-              // 광고 배너 (무료 플랜)
-              AdBannerWidget(isPremium: provider.isPremium),
-              _BottomNavBar(
-                currentIndex: _currentIndex,
-                onTap: (i) => setState(() => _currentIndex = i),
+              // ── 메인 콘텐츠 ──────────────────────────────────
+              IndexedStack(
+                index: _currentIndex,
+                children: _screens,
+              ),
+
+              // ── 하단 네비게이션 바 영역 ──────────────────────
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AdBannerWidget(isPremium: provider.isPremium),
+                    _BottomNavBar(
+                      currentIndex: _currentIndex,
+                      onTap: (i) => setState(() => _currentIndex = i),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── "추가" 버튼 (네비바 위 우측) ─────────────────
+              Positioned(
+                right: 16,
+                bottom: navBarHeight + adHeight + addBtnBottom,
+                child: _AddButton(onTap: _openAddTransaction),
               ),
             ],
           ),
@@ -112,12 +124,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ── 하단 네비게이션 바 (중앙 FAB 자리 빈칸 포함) ─────────────────
+/// 하단 네비게이션 바 (5개 탭)
 class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const _BottomNavBar({required this.currentIndex, required this.onTap});
+  const _BottomNavBar({
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,28 +141,108 @@ class _BottomNavBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: 0.09),
             blurRadius: 16,
             offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
+        top: false,
         child: SizedBox(
-          height: 60,
+          height: 58,
           child: Row(
             children: [
-              // 왼쪽 2개
-              _NavItem(icon: Icons.home_rounded,         outlineIcon: Icons.home_outlined,          label: '홈',  index: 0, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.receipt_long_rounded, outlineIcon: Icons.receipt_long_outlined,  label: '내역', index: 1, currentIndex: currentIndex, onTap: onTap),
-              // 중앙 FAB 빈 공간
-              const Expanded(child: SizedBox()),
-              // 오른쪽 3개 → 은행 추가
-              _NavItem(icon: Icons.bar_chart_rounded,        outlineIcon: Icons.bar_chart_outlined,        label: '분석', index: 2, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.account_balance_rounded,  outlineIcon: Icons.account_balance_outlined,  label: '은행', index: 3, currentIndex: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.settings_rounded,         outlineIcon: Icons.settings_outlined,         label: '설정', index: 4, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(
+                icon: Icons.home_rounded,
+                outlineIcon: Icons.home_outlined,
+                label: '홈',
+                index: 0,
+                currentIndex: currentIndex,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.receipt_long_rounded,
+                outlineIcon: Icons.receipt_long_outlined,
+                label: '내역',
+                index: 1,
+                currentIndex: currentIndex,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.bar_chart_rounded,
+                outlineIcon: Icons.bar_chart_outlined,
+                label: '분석',
+                index: 2,
+                currentIndex: currentIndex,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.account_balance_rounded,
+                outlineIcon: Icons.account_balance_outlined,
+                label: '은행',
+                index: 3,
+                currentIndex: currentIndex,
+                onTap: onTap,
+              ),
+              _NavItem(
+                icon: Icons.settings_rounded,
+                outlineIcon: Icons.settings_outlined,
+                label: '설정',
+                index: 4,
+                currentIndex: currentIndex,
+                onTap: onTap,
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 네비바 위 우측 "추가" 버튼
+class _AddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppTheme.primaryBlue, AppTheme.primaryTeal],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryBlue.withValues(alpha: 0.45),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, color: Colors.white, size: 16),
+            SizedBox(width: 4),
+            Text(
+              '추가',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );
