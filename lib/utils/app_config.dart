@@ -20,7 +20,7 @@ class AppConfig {
   static const String _localIp = '192.168.45.188';  // ← 본인 PC IP로 교체
 
   /// ngrok 사용 시: ngrok URL 입력 (https://xxxx.ngrok-free.app)
-  static const String _ngrokUrl = '';  // 비어 있으면 _localIp 사용
+  static const String _ngrokUrl = 'https://budget-buddy-chi-green.vercel.app';  // Vercel 운영 서버
 
   static String get apiBaseUrl {
     if (kIsWeb) {
