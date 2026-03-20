@@ -22,5 +22,19 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Android 릴리즈 서명 (절대 커밋 금지)
+android/key.properties
+*.jks
+*.keystore
+
+# 백엔드 환경 변수 (절대 커밋 금지)
+backend/.env
+
+# Firebase 서비스 계정 키 (절대 커밋 금지)
+backend/*firebase-adminsdk*.json
+
+# Claude Code 메모리/설정 (커밋 불필요)
+.claude/
+
 # Keep lib/ directory for source code!
 

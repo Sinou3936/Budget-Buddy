@@ -26,15 +26,19 @@ class AppEnv {
   // ─── AdMob Unit IDs ────────────────────────────────────────
   /// 배너 광고 Unit ID
   static String get bannerAdUnitId {
-    if (useMockAds) return 'ca-app-pub-3940256099942544/6300978111'; // Google 테스트 ID
-    return 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX'; // 실제 AdMob ID (배포 전 교체)
+    if (useMockAds) return 'ca-app-pub-3940256099942544/6300978111'; // Google 테스트 ID (DEV)
+    return 'ca-app-pub-4743333137314535/8384748554'; // 실제 배너 광고 ID
   }
 
   /// 전면(Interstitial) 광고 Unit ID
   static String get interstitialAdUnitId {
-    if (useMockAds) return 'ca-app-pub-3940256099942544/1033173712'; // Google 테스트 ID
-    return 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX'; // 실제 AdMob ID (배포 전 교체)
+    if (useMockAds) return 'ca-app-pub-3940256099942544/1033173712'; // Google 테스트 ID (DEV)
+    return 'ca-app-pub-4743333137314535/8384748554'; // TODO: 전면 광고 단위 별도 생성 필요
   }
+
+  // ─── Gemini AI ────────────────────────────────────────────
+  /// AI 기능은 백엔드를 통해 제공 (항상 활성화)
+  static const bool geminiEnabled = true;
 
   // ─── 환경 레이블 ───────────────────────────────────────────
   static String get label => isDev ? 'DEV' : 'PROD';

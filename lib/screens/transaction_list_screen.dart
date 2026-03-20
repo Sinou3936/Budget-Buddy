@@ -29,30 +29,36 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(
-                child: GradientHeader(
-                  height: 110,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '거래 내역',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 150,
+                backgroundColor: AppTheme.primaryBlue,
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                title: const Text(
+                  '거래 내역',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppTheme.primaryBlue, Color(0xFF1976D2), AppTheme.primaryTeal],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
+                        child: Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Text(
                             '이번 달 ${provider.currentMonthTransactions.length}건의 거래',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 12),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

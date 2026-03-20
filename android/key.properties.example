@@ -1,0 +1,8 @@
+# Android 릴리즈 서명 설정
+# 이 파일을 복사해서 key.properties 로 사용하세요: cp key.properties.example key.properties
+# key.properties 는 .gitignore 에 포함되어 있으므로 절대 커밋하지 마세요
+
+storePassword=여기에_키스토어_비밀번호
+keyPassword=여기에_키_비밀번호
+keyAlias=budget-buddy-key
+storeFile=../budget-buddy-release.jks

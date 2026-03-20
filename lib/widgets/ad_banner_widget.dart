@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_env.dart';
 
@@ -112,41 +113,54 @@ class _MockBannerAd extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  PROD: 실제 AdMob 배너 자리 (배포 전 google_mobile_ads 교체)
+//  PROD: 실제 AdMob 배너 광고
 // ──────────────────────────────────────────────────────────────
-class _ProdBannerAd extends StatelessWidget {
+class _ProdBannerAd extends StatefulWidget {
   final String unitId;
   const _ProdBannerAd({required this.unitId});
 
   @override
-  Widget build(BuildContext context) {
-    // ── TODO: google_mobile_ads 활성화 후 아래 주석을 해제하세요 ──
-    // return SizedBox(
-    //   height: 50,
-    //   child: AdWidget(ad: BannerAd(
-    //     adUnitId: unitId,
-    //     size: AdSize.banner,
-    //     request: const AdRequest(),
-    //     listener: BannerAdListener(),
-    //   )..load()),
-    // );
+  State<_ProdBannerAd> createState() => _ProdBannerAdState();
+}
 
-    // 임시: PROD 빌드에서도 UI 깨지지 않도록 빈 박스 유지
-    return Container(
-      width: double.infinity,
-      height: 56,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.dividerColor),
+class _ProdBannerAdState extends State<_ProdBannerAd> {
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    _bannerAd = BannerAd(
+      adUnitId: widget.unitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => _isLoaded = true),
+        onAdFailedToLoad: (ad, _) {
+          ad.dispose();
+          _bannerAd = null;
+        },
       ),
-      child: const Center(
-        child: Text(
-          '광고 로딩 중...',
-          style: TextStyle(fontSize: 12, color: AppTheme.textLight),
-        ),
-      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoaded || _bannerAd == null) return const SizedBox.shrink();
+    return SizedBox(
+      width: _bannerAd!.size.width.toDouble(),
+      height: _bannerAd!.size.height.toDouble(),
+      child: AdWidget(ad: _bannerAd!),
     );
   }
 }
@@ -283,9 +297,23 @@ class AdInterstitialService {
     );
   }
 
-  // ── PROD (배포 전 AdMob SDK 교체) ────────────────────────
+  // ── PROD: 실제 AdMob 전면 광고 ────────────────────────────
   static void _showProdInterstitial(BuildContext context) {
-    // TODO: AdMob InterstitialAd.load() → .show() 구현
-    // 지금은 아무것도 표시하지 않음 (광고 로드 실패 시 앱 크래시 방지)
+    InterstitialAd.load(
+      adUnitId: AppEnv.interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) => ad.dispose(),
+            onAdFailedToShowFullScreenContent: (ad, _) => ad.dispose(),
+          );
+          ad.show();
+        },
+        onAdFailedToLoad: (_) {
+          // 광고 로드 실패 시 조용히 무시
+        },
+      ),
+    );
   }
 }

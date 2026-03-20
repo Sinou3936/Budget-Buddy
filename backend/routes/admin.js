@@ -1,147 +1,143 @@
-// routes/admin.js - 관리자 전용 API (설정값 수정)
+// routes/admin.js
 const express = require('express');
 const router  = express.Router();
+const { db } = require('../firebase');
 
-module.exports = (db) => {
+module.exports = () => {
 
-  // ──────────────────────────────────────────────
-  // GET /api/admin/config  - 전체 설정 조회
-  // ──────────────────────────────────────────────
-  router.get('/config', (req, res) => {
+  // GET /api/admin/config
+  router.get('/config', async (req, res) => {
     try {
-      const rows = db.prepare('SELECT * FROM app_config ORDER BY key').all();
-      res.json({ success: true, data: rows });
+      const snap = await db.collection('app_config').orderBy('__name__').get();
+      const data = snap.docs.map(d => ({ key: d.id, ...d.data() }));
+      res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // ──────────────────────────────────────────────
-  // PATCH /api/admin/config/:key  - 설정값 수정
-  // body: { value }
-  // ──────────────────────────────────────────────
-  router.patch('/config/:key', (req, res) => {
+  // PATCH /api/admin/config/:key
+  router.patch('/config/:key', async (req, res) => {
     const { value } = req.body;
     try {
       const val = typeof value === 'object' ? JSON.stringify(value) : String(value);
-      db.prepare(`
-        UPDATE app_config SET value=?, updated_at=datetime('now','localtime') WHERE key=?
-      `).run(val, req.params.key);
+      await db.collection('app_config').doc(req.params.key).update({
+        value: val,
+        updated_at: new Date().toISOString(),
+      });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // ──────────────────────────────────────────────
-  // GET /api/admin/plans  - 구독 플랜 관리
-  // ──────────────────────────────────────────────
-  router.get('/plans', (req, res) => {
+  // GET /api/admin/plans
+  router.get('/plans', async (req, res) => {
     try {
-      const plans = db.prepare('SELECT * FROM subscription_plans ORDER BY sort_order').all();
-      res.json({ success: true, data: plans });
+      const snap = await db.collection('subscription_plans').orderBy('sort_order').get();
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // PATCH /api/admin/plans/:id  - 플랜 가격/이름 수정
-  router.patch('/plans/:id', (req, res) => {
+  // PATCH /api/admin/plans/:id
+  router.patch('/plans/:id', async (req, res) => {
     const { name, price, badge, sub_text, is_active } = req.body;
     try {
-      const updates = [];
-      const params = [];
-      if (name      != null) { updates.push('name=?');      params.push(name); }
-      if (price     != null) { updates.push('price=?');     params.push(price); }
-      if (badge     != null) { updates.push('badge=?');     params.push(badge); }
-      if (sub_text  != null) { updates.push('sub_text=?');  params.push(sub_text); }
-      if (is_active != null) { updates.push('is_active=?'); params.push(is_active ? 1 : 0); }
-      if (updates.length === 0) return res.status(400).json({ success: false, error: 'No fields to update' });
-      params.push(req.params.id);
-      db.prepare(`UPDATE subscription_plans SET ${updates.join(',')} WHERE id=?`).run(...params);
+      const updates = {};
+      if (name      != null) updates.name      = name;
+      if (price     != null) updates.price     = price;
+      if (badge     != null) updates.badge     = badge;
+      if (sub_text  != null) updates.sub_text  = sub_text;
+      if (is_active != null) updates.is_active = !!is_active;
+      if (Object.keys(updates).length === 0)
+        return res.status(400).json({ success: false, error: 'No fields to update' });
+      await db.collection('subscription_plans').doc(req.params.id).update(updates);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // ──────────────────────────────────────────────
-  // GET /api/admin/banks  - 은행 마스터 관리
-  // ──────────────────────────────────────────────
-  router.get('/banks', (req, res) => {
+  // GET /api/admin/banks
+  router.get('/banks', async (req, res) => {
     try {
-      const banks = db.prepare('SELECT * FROM banks_master ORDER BY sort_order').all();
-      res.json({ success: true, data: banks });
+      const snap = await db.collection('banks_master').orderBy('sort_order').get();
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  router.patch('/banks/:id', (req, res) => {
+  // PATCH /api/admin/banks/:id
+  router.patch('/banks/:id', async (req, res) => {
     const { name, icon, color_hex, is_active, sort_order } = req.body;
     try {
-      const updates = [];
-      const params = [];
-      if (name        != null) { updates.push('name=?');       params.push(name); }
-      if (icon        != null) { updates.push('icon=?');       params.push(icon); }
-      if (color_hex   != null) { updates.push('color_hex=?');  params.push(color_hex); }
-      if (is_active   != null) { updates.push('is_active=?');  params.push(is_active ? 1 : 0); }
-      if (sort_order  != null) { updates.push('sort_order=?'); params.push(sort_order); }
-      if (updates.length === 0) return res.status(400).json({ success: false, error: 'No fields' });
-      params.push(req.params.id);
-      db.prepare(`UPDATE banks_master SET ${updates.join(',')} WHERE id=?`).run(...params);
+      const updates = {};
+      if (name       != null) updates.name       = name;
+      if (icon       != null) updates.icon       = icon;
+      if (color_hex  != null) updates.color_hex  = color_hex;
+      if (is_active  != null) updates.is_active  = !!is_active;
+      if (sort_order != null) updates.sort_order = sort_order;
+      if (Object.keys(updates).length === 0)
+        return res.status(400).json({ success: false, error: 'No fields' });
+      await db.collection('banks_master').doc(req.params.id).update(updates);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // ──────────────────────────────────────────────
-  // GET /api/admin/users  - 전체 사용자 목록
-  // ──────────────────────────────────────────────
-  router.get('/users', (req, res) => {
-    const { limit = 100, offset = 0 } = req.query;
+  // GET /api/admin/users
+  router.get('/users', async (req, res) => {
+    const { limit = 100 } = req.query;
     try {
-      const users = db.prepare(
-        'SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?'
-      ).all(Number(limit), Number(offset));
-      const total = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-      res.json({ success: true, data: users, total });
+      const snap = await db.collection('users')
+        .orderBy('created_at', 'desc')
+        .limit(Number(limit))
+        .get();
+      const data  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const total = (await db.collection('users').count().get()).data().count;
+      res.json({ success: true, data, total });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // ──────────────────────────────────────────────
-  // GET /api/admin/keywords  - AI 키워드 관리
-  // ──────────────────────────────────────────────
-  router.get('/keywords', (req, res) => {
+  // GET /api/admin/keywords
+  router.get('/keywords', async (req, res) => {
     const { category } = req.query;
     try {
-      let sql = 'SELECT * FROM ai_keywords';
-      const params = [];
-      if (category) { sql += ' WHERE category=?'; params.push(category); }
-      sql += ' ORDER BY category, keyword';
-      res.json({ success: true, data: db.prepare(sql).all(...params) });
+      let query = db.collection('ai_keywords').orderBy('category');
+      if (category) query = db.collection('ai_keywords').where('category', '==', category);
+      const snap = await query.get();
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  router.post('/keywords', (req, res) => {
+  // POST /api/admin/keywords
+  router.post('/keywords', async (req, res) => {
     const { keyword, category } = req.body;
-    if (!keyword || !category) return res.status(400).json({ success: false, error: 'Missing fields' });
+    if (!keyword || !category)
+      return res.status(400).json({ success: false, error: 'Missing fields' });
     try {
-      db.prepare('INSERT OR IGNORE INTO ai_keywords (keyword, category) VALUES (?,?)').run(keyword, category);
+      await db.collection('ai_keywords').add({ keyword, category, is_active: true });
       res.status(201).json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  router.delete('/keywords/:id', (req, res) => {
+  // DELETE /api/admin/keywords/:id
+  router.delete('/keywords/:id', async (req, res) => {
     try {
-      db.prepare('DELETE FROM ai_keywords WHERE id=?').run(req.params.id);
+      await db.collection('ai_keywords').doc(req.params.id).delete();
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

@@ -4,3 +4,6 @@ node_modules/
 *.db-wal
 .env
 *.log
+*firebase-adminsdk*.json
+database.js
+seed.js

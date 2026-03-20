@@ -1,53 +1,63 @@
-// routes/budgets.js - 예산 CRUD
+// routes/budgets.js
 const express = require('express');
 const router  = express.Router();
+const { db } = require('../firebase');
 
-module.exports = (db) => {
+module.exports = () => {
 
   // GET /api/budgets?userId=
-  router.get('/', (req, res) => {
+  router.get('/', async (req, res) => {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
 
     try {
-      // 예산 + 이번달 실제 지출 JOIN
       const now = new Date();
-      const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const ym  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-      const budgets = db.prepare(`
-        SELECT b.category, b.monthly_limit,
-               COALESCE(t.spent, 0) as spent
-        FROM budgets b
-        LEFT JOIN (
-          SELECT category, SUM(amount) as spent
-          FROM transactions
-          WHERE user_id=? AND type='expense' AND strftime('%Y-%m', date)=?
-          GROUP BY category
-        ) t ON b.category = t.category
-        WHERE b.user_id=?
-        ORDER BY b.category
-      `).all(userId, ym, userId);
+      const [budgetSnap, txSnap] = await Promise.all([
+        db.collection('users').doc(userId).collection('budgets').get(),
+        db.collection('users').doc(userId).collection('transactions')
+          .where('type', '==', 'expense')
+          .where('date', '>=', `${ym}-01`)
+          .where('date', '<=', `${ym}-31`)
+          .get(),
+      ]);
 
-      res.json({ success: true, data: budgets });
+      // 카테고리별 지출 합산
+      const spentMap = {};
+      txSnap.docs.forEach(d => {
+        const t = d.data();
+        spentMap[t.category] = (spentMap[t.category] || 0) + t.amount;
+      });
+
+      const data = budgetSnap.docs.map(d => {
+        const category = d.data().category || d.id.replace(/_/g, '/');
+        return {
+          category,
+          monthly_limit: d.data().monthly_limit,
+          spent: spentMap[category] || 0,
+        };
+      }).sort((a, b) => a.category.localeCompare(b.category));
+
+      res.json({ success: true, data });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });
 
-  // PUT /api/budgets  - 예산 설정 (upsert)
-  // body: { userId, category, monthlyLimit }
-  router.put('/', (req, res) => {
+  // PUT /api/budgets
+  router.put('/', async (req, res) => {
     const { userId, category, monthlyLimit } = req.body;
     if (!userId || !category || monthlyLimit == null) {
       return res.status(400).json({ success: false, error: 'Missing fields' });
     }
     try {
-      db.prepare(`
-        INSERT INTO budgets (user_id, category, monthly_limit)
-        VALUES (?,?,?)
-        ON CONFLICT(user_id, category) DO UPDATE SET monthly_limit=excluded.monthly_limit,
-          updated_at=datetime('now','localtime')
-      `).run(userId, category, monthlyLimit);
+      const docId = category.replace(/\//g, '_');
+      await db.collection('users').doc(userId).collection('budgets').doc(docId).set({
+        category,
+        monthly_limit: monthlyLimit,
+        updated_at: new Date().toISOString(),
+      }, { merge: true });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });

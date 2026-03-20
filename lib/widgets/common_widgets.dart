@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/transaction.dart';
 import '../utils/app_env.dart';
+import '../screens/add_transaction_screen.dart';
 
 // ══════════════════════════════════════════════════════════════
 //  DEV 환경 배너 (화면 상단 고정 노란 리본)
@@ -13,17 +14,14 @@ class DevEnvBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!AppEnv.showDevBanner) return child;
-    return Banner(
-      message: 'DEV',
-      location: BannerLocation.topEnd,
-      color: const Color(0xFFFFD600),
-      textStyle: const TextStyle(
-        color: Color(0xFF5D4037),
-        fontSize: 9,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1,
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Banner(
+        message: 'DEV',
+        location: BannerLocation.topEnd,
+        color: const Color(0xFFFFD600),
+        child: child,
       ),
-      child: child,
     );
   }
 }
@@ -250,7 +248,58 @@ class TransactionListTile extends StatelessWidget {
             ],
           ),
         ),
-        onLongPress: onDelete != null ? () => _confirmDelete(context) : null,
+        onLongPress: onDelete != null ? () => _showActionMenu(context) : null,
+      ),
+    );
+  }
+
+  void _showActionMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: AppTheme.dividerColor, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Text(
+                transaction.title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: AppTheme.primaryBlue),
+              title: const Text('수정'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddTransactionScreen(editTransaction: transaction),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppTheme.dangerRed),
+              title: const Text('삭제', style: TextStyle(color: AppTheme.dangerRed)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _confirmDelete(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

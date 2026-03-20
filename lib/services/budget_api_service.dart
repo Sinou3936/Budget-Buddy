@@ -124,9 +124,27 @@ class BudgetApiService {
     return null;
   }
 
+  /// 거래 수정
+  Future<Transaction?> updateTransaction(String userId, Transaction transaction) async {
+    final r = await _client.put('/api/transactions/${transaction.id}', {
+      'userId': userId,
+      'title': transaction.title,
+      'amount': transaction.amount,
+      'category': transaction.category,
+      'type': transaction.type,
+      'date': transaction.date.toIso8601String(),
+      'memo': transaction.memo,
+      'bankName': transaction.bankName,
+    });
+    if (r['success'] == true) {
+      return Transaction.fromApiMap(r['data'] as Map<String, dynamic>);
+    }
+    return null;
+  }
+
   /// 거래 삭제
-  Future<bool> deleteTransaction(String transactionId) async {
-    final r = await _client.delete('/api/transactions/$transactionId');
+  Future<bool> deleteTransaction(String transactionId, {required String userId}) async {
+    final r = await _client.delete('/api/transactions/$transactionId?userId=$userId');
     return r['success'] == true;
   }
 
@@ -177,6 +195,38 @@ class BudgetApiService {
       'category': category,
       'monthlyLimit': monthlyLimit,
     });
+    return r['success'] == true;
+  }
+
+  // ══════════════════════════════════════════════
+  //  BANK ACCOUNTS (은행 연동)
+  // ══════════════════════════════════════════════
+
+  /// 연동된 은행 계좌 목록
+  Future<List<Map<String, dynamic>>> fetchLinkedBankAccounts(String userId) async {
+    final r = await _client.get('/api/bank-accounts?userId=$userId');
+    if (r['success'] == true) {
+      return (r['data'] as List).cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  /// 은행 연동
+  Future<Map<String, dynamic>?> linkBankAccount({
+    required String userId,
+    required String bankName,
+  }) async {
+    final r = await _client.post('/api/bank-accounts', {
+      'userId': userId,
+      'bankName': bankName,
+    });
+    if (r['success'] == true) return r['data'] as Map<String, dynamic>;
+    return null;
+  }
+
+  /// 은행 연동 해제
+  Future<bool> unlinkBankAccount(String accountId) async {
+    final r = await _client.delete('/api/bank-accounts/$accountId');
     return r['success'] == true;
   }
 

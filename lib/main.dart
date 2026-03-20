@@ -1,30 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'theme/app_theme.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/gemini_provider.dart';
+import 'screens/add_transaction_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/transaction_list_screen.dart';
 import 'screens/stats_screen.dart';
-import 'screens/bank_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/add_transaction_screen.dart';
+import 'screens/ai_hub_screen.dart';
 import 'widgets/ad_banner_widget.dart';
 import 'widgets/common_widgets.dart';
 import 'utils/app_env.dart';
+import 'services/notification_service.dart';
+import 'services/gemini_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: binding);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ),
   );
+  // AdMob 초기화 (DEV에서는 테스트 ID 사용, PROD에서는 실제 ID)
+  // Web 환경에서는 AdMob 미지원이므로 Android에서만 초기화
   if (!AppEnv.useMockAds) {
     await MobileAds.instance.initialize();
   }
+  await NotificationService.init();
+  GeminiService.instance.initialize();
+  FlutterNativeSplash.remove();
   runApp(const BudgetBuddyApp());
 }
 
@@ -36,6 +46,7 @@ class BudgetBuddyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => GeminiProvider()),
       ],
       child: DevEnvBanner(
         child: MaterialApp(
@@ -59,62 +70,85 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const TransactionListScreen(),
-    const StatsScreen(),
-    const BankScreen(),
-    const SettingsScreen(),
-  ];
+  late final List<Widget> _screens;
 
-  void _openAddTransaction() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      DashboardScreen(onNavigateToTransactions: () => setState(() => _currentIndex = 1)),
+      const TransactionListScreen(),
+      const StatsScreen(),
+      const AiHubScreen(),
+      const SettingsScreen(),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, provider, _) {
-        // 광고 배너 높이 계산 (무료 플랜이면 50px, 프리미엄이면 0)
-        final adHeight = provider.isPremium ? 0.0 : 50.0;
-        // 네비바 + 광고 + 추가버튼 높이를 합산해 body 여백으로 사용
-        const navBarHeight = 58.0;
-        const addBtnBottom = 8.0; // 네비바 위 간격
-
         return Scaffold(
-          body: Stack(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          floatingActionButton: _currentIndex == 0
+              ? FloatingActionButton.extended(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AddTransactionScreen()),
+                  ),
+                  backgroundColor: AppTheme.primaryBlue,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: const StadiumBorder(),
+                  icon: const Icon(Icons.add_rounded, size: 22),
+                  label: const Text(
+                    '지출 추가',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                )
+              : null,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // ── 메인 콘텐츠 ──────────────────────────────────
-              IndexedStack(
-                index: _currentIndex,
-                children: _screens,
-              ),
-
-              // ── 하단 네비게이션 바 영역 ──────────────────────
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AdBannerWidget(isPremium: provider.isPremium),
-                    _BottomNavBar(
-                      currentIndex: _currentIndex,
-                      onTap: (i) => setState(() => _currentIndex = i),
+              // 광고 배너 (수익화 - 무료 플랜)
+              AdBannerWidget(isPremium: provider.isPremium),
+              // 하단 네비게이션
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
                     ),
                   ],
                 ),
-              ),
-
-              // ── "추가" 버튼 (네비바 위 우측) ─────────────────
-              Positioned(
-                right: 16,
-                bottom: navBarHeight + adHeight + addBtnBottom,
-                child: _AddButton(onTap: _openAddTransaction),
+                child: SafeArea(
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    onTap: (idx) => setState(() => _currentIndex = idx),
+                    type: BottomNavigationBarType.fixed,
+                    selectedItemColor: AppTheme.primaryBlue,
+                    unselectedItemColor: AppTheme.textLight,
+                    selectedFontSize: 11,
+                    unselectedFontSize: 11,
+                    elevation: 0,
+                    backgroundColor: Colors.transparent,
+                    items: [
+                      _buildNavItem(Icons.home_rounded, Icons.home_outlined, '홈', 0),
+                      _buildNavItem(Icons.receipt_long_rounded, Icons.receipt_long_outlined, '내역', 1),
+                      _buildNavItem(Icons.bar_chart_rounded, Icons.bar_chart_outlined, '분석', 2),
+                      _buildNavItem(Icons.auto_awesome_rounded, Icons.auto_awesome_outlined, 'AI', 3),
+                      _buildNavItem(Icons.settings_rounded, Icons.settings_outlined, '설정', 4),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -122,187 +156,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       },
     );
   }
-}
 
-/// 하단 네비게이션 바 (5개 탭)
-class _BottomNavBar extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const _BottomNavBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.09),
-            blurRadius: 16,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 58,
-          child: Row(
-            children: [
-              _NavItem(
-                icon: Icons.home_rounded,
-                outlineIcon: Icons.home_outlined,
-                label: '홈',
-                index: 0,
-                currentIndex: currentIndex,
-                onTap: onTap,
-              ),
-              _NavItem(
-                icon: Icons.receipt_long_rounded,
-                outlineIcon: Icons.receipt_long_outlined,
-                label: '내역',
-                index: 1,
-                currentIndex: currentIndex,
-                onTap: onTap,
-              ),
-              _NavItem(
-                icon: Icons.bar_chart_rounded,
-                outlineIcon: Icons.bar_chart_outlined,
-                label: '분석',
-                index: 2,
-                currentIndex: currentIndex,
-                onTap: onTap,
-              ),
-              _NavItem(
-                icon: Icons.account_balance_rounded,
-                outlineIcon: Icons.account_balance_outlined,
-                label: '은행',
-                index: 3,
-                currentIndex: currentIndex,
-                onTap: onTap,
-              ),
-              _NavItem(
-                icon: Icons.settings_rounded,
-                outlineIcon: Icons.settings_outlined,
-                label: '설정',
-                index: 4,
-                currentIndex: currentIndex,
-                onTap: onTap,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 네비바 위 우측 "추가" 버튼
-class _AddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+  BottomNavigationBarItem _buildNavItem(
+      IconData activeIcon, IconData inactiveIcon, String label, int index) {
+    final isActive = _currentIndex == index;
+    return BottomNavigationBarItem(
+      icon: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryBlue, AppTheme.primaryTeal],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.45),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: isActive
+              ? AppTheme.primaryBlue.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add, color: Colors.white, size: 16),
-            SizedBox(width: 4),
-            Text(
-              '추가',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(isActive ? activeIcon : inactiveIcon),
       ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData outlineIcon;
-  final String label;
-  final int index;
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.outlineIcon,
-    required this.label,
-    required this.index,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = currentIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => onTap(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? AppTheme.primaryBlue.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isActive ? icon : outlineIcon,
-                size: 22,
-                color: isActive ? AppTheme.primaryBlue : AppTheme.textLight,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? AppTheme.primaryBlue : AppTheme.textLight,
-              ),
-            ),
-          ],
-        ),
-      ),
+      label: label,
     );
   }
 }

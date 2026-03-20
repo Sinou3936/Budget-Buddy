@@ -62,7 +62,7 @@ class Transaction {
       date: DateTime.parse(map['date'] as String),
       memo: map['memo'] as String?,
       bankName: map['bank_name'] as String?,
-      isAiClassified: (map['is_ai_classified'] as int? ?? 0) == 1,
+      isAiClassified: map['is_ai_classified'] == true,
     );
   }
 

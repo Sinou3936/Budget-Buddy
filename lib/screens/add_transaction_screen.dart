@@ -5,9 +5,13 @@ import '../providers/transaction_provider.dart';
 import '../models/transaction.dart';
 import '../theme/app_theme.dart';
 import '../services/ai_service.dart';
+import 'receipt_ocr_screen.dart';
+import '../models/ocr_result.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  /// 수정 시 기존 거래를 전달, null이면 새 거래 추가 모드
+  final Transaction? editTransaction;
+  const AddTransactionScreen({super.key, this.editTransaction});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -26,6 +30,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   String _aiCategory = '';
   bool _isAnalyzing = false;
 
+  bool get _isEditing => widget.editTransaction != null;
+
   final List<String> _expenseCategories = [
     '식비', '교통', '쇼핑', '문화/여가', '의료', '통신', '주거', '교육', '기타'
   ];
@@ -33,7 +39,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final edit = widget.editTransaction;
+    if (edit != null) {
+      _selectedType    = edit.type;
+      _selectedCategory = edit.category;
+      _selectedDate    = edit.date;
+      _titleController.text  = edit.title;
+      _amountController.text = edit.amount.toInt().toString();
+      _memoController.text   = edit.memo ?? '';
+    }
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: _selectedType == 'income' ? 1 : 0,
+    );
     _tabController.addListener(() {
       setState(() {
         _selectedType = _tabController.index == 0 ? 'expense' : 'income';
@@ -86,6 +105,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     if (date != null) setState(() => _selectedDate = date);
   }
 
+  Future<void> _openReceiptOcr() async {
+    final result = await Navigator.push<OcrResult>(
+      context,
+      MaterialPageRoute(builder: (_) => const ReceiptOcrScreen()),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        if (result.title.isNotEmpty) _titleController.text = result.title;
+        if (result.amount != null && result.amount! > 0) {
+          _amountController.text = result.amount!.toInt().toString();
+        }
+        if (result.category.isNotEmpty) {
+          _selectedCategory = result.category;
+          _aiCategory = result.category;
+        }
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (_titleController.text.isEmpty || _amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,17 +142,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     }
 
     final provider = context.read<TransactionProvider>();
-    final transaction = Transaction(
-      id: provider.generateNewId(),
-      title: _titleController.text,
-      amount: amount,
-      category: _selectedCategory,
-      type: _selectedType,
-      date: _selectedDate,
-      memo: _memoController.text.isNotEmpty ? _memoController.text : null,
-    );
 
-    await provider.addTransaction(transaction);
+    if (_isEditing) {
+      // 수정 모드
+      final updated = widget.editTransaction!.copyWith(
+        title: _titleController.text,
+        amount: amount,
+        category: _selectedCategory,
+        type: _selectedType,
+        date: _selectedDate,
+        memo: _memoController.text.isNotEmpty ? _memoController.text : null,
+      );
+      await provider.updateTransaction(updated);
+    } else {
+      // 추가 모드
+      final transaction = Transaction(
+        id: provider.generateNewId(),
+        title: _titleController.text,
+        amount: amount,
+        category: _selectedCategory,
+        type: _selectedType,
+        date: _selectedDate,
+        memo: _memoController.text.isNotEmpty ? _memoController.text : null,
+      );
+      await provider.addTransaction(transaction);
+    }
 
     if (mounted) {
       Navigator.pop(context);
@@ -124,7 +176,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             children: [
               const Icon(Icons.check_circle, color: Colors.white, size: 18),
               const SizedBox(width: 8),
-              Text('${_selectedType == 'expense' ? '지출' : '수입'} 내역이 추가되었습니다'),
+              Text(_isEditing
+                  ? '거래 내역이 수정되었습니다'
+                  : '${_selectedType == 'expense' ? '지출' : '수입'} 내역이 추가되었습니다'),
             ],
           ),
           backgroundColor: AppTheme.successGreen,
@@ -140,7 +194,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('거래 추가'),
+        title: Text(_isEditing ? '거래 수정' : '거래 추가'),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -150,6 +204,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             ),
           ),
         ),
+        actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.document_scanner_outlined),
+              tooltip: '영수증 스캔',
+              onPressed: _openReceiptOcr,
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -354,7 +416,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     const Icon(Icons.save, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      '${_selectedType == 'expense' ? '지출' : '수입'} 저장',
+                      _isEditing ? '수정 완료' : '${_selectedType == 'expense' ? '지출' : '수입'} 저장',
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.bold),
                     ),

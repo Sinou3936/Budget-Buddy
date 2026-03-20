@@ -20,7 +20,7 @@ class ApiClient {
     try {
       final uri = Uri.parse('$_base$path');
       final res = await http.get(uri, headers: _headers)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 4));
       return _parse(res);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -32,7 +32,7 @@ class ApiClient {
     try {
       final uri = Uri.parse('$_base$path');
       final res = await http.post(uri, headers: _headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 4));
       return _parse(res);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -44,7 +44,7 @@ class ApiClient {
     try {
       final uri = Uri.parse('$_base$path');
       final res = await http.put(uri, headers: _headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 4));
       return _parse(res);
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -56,7 +56,7 @@ class ApiClient {
     try {
       final uri = Uri.parse('$_base$path');
       final res = await http.delete(uri, headers: _headers)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 4));
       return _parse(res);
     } catch (e) {
       return {'success': false, 'error': e.toString()};

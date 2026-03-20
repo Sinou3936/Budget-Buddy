@@ -6,7 +6,8 @@ import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onNavigateToTransactions;
+  const DashboardScreen({super.key, this.onNavigateToTransactions});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -114,55 +115,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
 
-        final hasTransactions = provider.currentMonthTransactions.isNotEmpty;
-
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
             slivers: [
+              if (provider.isOffline)
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: Colors.orange,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '서버에 연결할 수 없습니다. 저장된 데이터를 표시합니다.',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               _buildSliverHeader(provider),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── 빠른 통계 카드 ──────────────────────────────
                       _buildQuickStats(provider),
                       const SizedBox(height: 20),
-
-                      // ── 데이터 없을 때 온보딩 카드 ─────────────────
-                      if (!hasTransactions) ...[
-                        _buildEmptyStateCard(),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── AI 인사이트 ────────────────────────────────
-                      if (provider.insights.isNotEmpty) ...[
-                        _buildAiInsightSection(provider),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── 카테고리 차트 (데이터 있을 때만) ───────────
-                      if (provider.categoryExpenses.isNotEmpty) ...[
-                        _buildCategoryChart(provider),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── 예산 현황 ──────────────────────────────────
-                      if (provider.budgets.isNotEmpty) ...[
-                        _buildBudgetSection(provider),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── 최근 거래 ──────────────────────────────────
-                      if (hasTransactions) ...[
-                        _buildRecentTransactions(provider),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // 하단 여백 (추가 버튼 + 네비게이션 바 공간)
-                      const SizedBox(height: 100),
+                      _buildAiInsightSection(provider),
+                      const SizedBox(height: 20),
+                      _buildCategoryChart(provider),
+                      const SizedBox(height: 20),
+                      _buildBudgetSection(provider),
+                      const SizedBox(height: 20),
+                      _buildRecentTransactions(provider),
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
@@ -174,156 +166,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ── 빈 상태 카드 (첫 방문 / 거래 없음) ──────────────────────────────
-  Widget _buildEmptyStateCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryBlue.withValues(alpha: 0.07),
-            AppTheme.primaryTeal.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.primaryBlue.withValues(alpha: 0.15),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet_rounded,
-              color: AppTheme.primaryBlue,
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'Budget Buddy에 오신 걸 환영해요! 🎉',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '첫 거래를 추가하면\nAI가 소비 패턴을 분석해 드려요.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppTheme.textSecondary,
-              height: 1.6,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          // 빠른 시작 팁
-          _buildTipRow(Icons.add_circle_outline, '오른쪽 아래 추가 버튼으로 거래를 기록하세요'),
-          const SizedBox(height: 10),
-          _buildTipRow(Icons.auto_awesome, 'AI가 카테고리를 자동으로 분류해 드려요'),
-          const SizedBox(height: 10),
-          _buildTipRow(Icons.bar_chart, '분석 탭에서 소비 패턴을 확인하세요'),
-        ],
-      ),
-    );
-  }
+  Widget _buildSliverHeader(TransactionProvider provider) {
+    final now = DateTime.now();
+    final months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
-  Widget _buildTipRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: AppTheme.primaryBlue, size: 16),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 220,
+      backgroundColor: AppTheme.primaryBlue,
+      elevation: 0,
+      title: const Text(
+        'Budget Buddy',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSliverHeader(TransactionProvider provider) {
-    final now = DateTime.now();
-    final months = ['1월', '2월', '3월', '4월', '5월', '6월',
-                    '7월', '8월', '9월', '10월', '11월', '12월'];
-
-    return SliverToBoxAdapter(
-      child: GradientHeader(
-        height: 200,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${now.year}년 ${months[now.month - 1]}',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
-                        ),
-                        const Text(
-                          'Budget Buddy',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.notifications_outlined,
-                          color: Colors.white, size: 20),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                const Text('이번 달 잔액',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 3),
-                Text(
-                  _formatAmount(provider.totalBalance),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildHeaderStat(
-                        '수입', provider.totalIncome, AppTheme.accentTeal),
-                    const SizedBox(width: 20),
-                    _buildHeaderStat(
-                        '지출', provider.totalExpense, const Color(0xFFFF8A80)),
-                  ],
-                ),
-              ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppTheme.primaryBlue, Color(0xFF1976D2), AppTheme.primaryTeal],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${now.year}년 ${months[now.month - 1]}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  const Spacer(),
+                  const Text('이번 달 잔액',
+                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatAmount(provider.totalBalance),
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Flexible(child: _buildHeaderStat('수입', provider.totalIncome, AppTheme.accentTeal)),
+                      const SizedBox(width: 20),
+                      Flexible(child: _buildHeaderStat('지출', provider.totalExpense, const Color(0xFFFF8A80))),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -375,22 +282,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             AppTheme.primaryBlue,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
             '지출 비율',
             '$expenseRatio%',
             Icons.pie_chart,
-            provider.totalExpense /
-                        (provider.totalIncome > 0
-                            ? provider.totalIncome
-                            : 1) >
-                    0.8
+            provider.totalExpense / (provider.totalIncome > 0 ? provider.totalIncome : 1) > 0.8
                 ? AppTheme.dangerRed
                 : AppTheme.successGreen,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
             'AI 인사이트',
@@ -406,14 +309,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatCard(
       String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -421,24 +324,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(height: 7),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(value,
                 style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: color)),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
@@ -452,6 +348,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAiInsightSection(TransactionProvider provider) {
+    if (provider.insights.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -486,6 +384,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildCategoryChart(TransactionProvider provider) {
     final expenses = provider.categoryExpenses;
+    if (expenses.isEmpty) return const SizedBox.shrink();
 
     final sections = <PieChartSectionData>[];
     int idx = 0;
@@ -596,6 +495,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildBudgetSection(TransactionProvider provider) {
+    if (provider.budgets.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -619,8 +520,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: AppTheme.textPrimary)),
           const SizedBox(height: 14),
           ...provider.budgets.map((budget) {
-            final color =
-                AppTheme.categoryColors[budget.category] ?? Colors.blue;
+            final color = AppTheme.categoryColors[budget.category] ?? Colors.blue;
             final isOver = budget.isOverBudget;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -651,9 +551,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: isOver
                                   ? AppTheme.dangerRed
                                   : AppTheme.textSecondary,
-                              fontWeight: isOver
-                                  ? FontWeight.bold
-                                  : FontWeight.normal),
+                              fontWeight:
+                                  isOver ? FontWeight.bold : FontWeight.normal),
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,
                         ),
@@ -683,51 +582,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildRecentTransactions(TransactionProvider provider) {
     final transactions = provider.currentMonthTransactions.take(5).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('최근 거래',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary)),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('전체 보기',
-                    style: TextStyle(
-                        color: AppTheme.primaryBlue, fontSize: 13)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ...transactions.map((t) => TransactionListTile(
-                transaction: t,
-                onDelete: () =>
-                    context.read<TransactionProvider>().deleteTransaction(t.id),
-              )),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('최근 거래',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary)),
+            TextButton(
+              onPressed: widget.onNavigateToTransactions,
+              child: const Text('전체 보기',
+                  style: TextStyle(color: AppTheme.primaryBlue, fontSize: 13)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...transactions.map((t) => TransactionListTile(
+              transaction: t,
+              onDelete: () =>
+                  context.read<TransactionProvider>().deleteTransaction(t.id),
+            )),
+      ],
     );
   }
 
