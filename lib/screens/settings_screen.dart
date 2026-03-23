@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../utils/app_env.dart';
 import '../services/notification_service.dart';
@@ -88,6 +87,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPremiumCard(BuildContext context, TransactionProvider provider) {
     return GestureDetector(
       onTap: () => _showPremiumDialog(context, provider),
@@ -426,7 +426,7 @@ Budget Buddy(이하 "앱")는 다음의 목적을 위하여 개인정보를 처�
       context: context,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => _NotificationSettingsSheet(),
+      builder: (ctx) => NotificationSettingsSheet(),
     );
   }
 
@@ -1022,12 +1022,12 @@ class _PremiumBottomSheetState extends State<_PremiumBottomSheet> {
   }
 }
 
-class _NotificationSettingsSheet extends StatefulWidget {
+class NotificationSettingsSheet extends StatefulWidget {
   @override
-  State<_NotificationSettingsSheet> createState() => _NotificationSettingsSheetState();
+  State<NotificationSettingsSheet> createState() => NotificationSettingsSheetState();
 }
 
-class _NotificationSettingsSheetState extends State<_NotificationSettingsSheet> {
+class NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
   late bool _budget;
   late bool _anomaly;
   late bool _report;
@@ -1137,7 +1137,7 @@ class _NotificationSettingsSheetState extends State<_NotificationSettingsSheet> 
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryBlue,
+            activeThumbColor: AppTheme.primaryBlue,
           ),
         ],
       ),

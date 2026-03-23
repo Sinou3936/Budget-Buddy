@@ -4,6 +4,8 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
+import 'notification_screen.dart';
+import '../services/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateToTransactions;
@@ -15,15 +17,22 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _touchedIndex = -1;
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _loadUnreadCount();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TransactionProvider>().loadData().then((_) {
         _checkAiAlerts();
       });
     });
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final count = await NotificationService.getUnreadCount();
+    if (mounted) setState(() => _unreadCount = count);
   }
 
   void _checkAiAlerts() {
@@ -182,13 +191,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 12),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
+          child: GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+              _loadUnreadCount();
+            },
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                ),
+                if (_unreadCount > 0)
+                  Positioned(
+                    right: 0, top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: AppTheme.dangerRed,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        _unreadCount > 9 ? '9+' : '$_unreadCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
           ),
         ),
       ],

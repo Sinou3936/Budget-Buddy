@@ -3,13 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_env.dart';
-import '../widgets/common_widgets.dart';
 import 'ai_chat_screen.dart';
 import 'ai_report_screen.dart';
 import 'budget_suggest_screen.dart';
 import 'receipt_ocr_screen.dart';
 import 'add_transaction_screen.dart';
-import '../models/transaction.dart';
 import '../models/ocr_result.dart';
 
 class AiHubScreen extends StatelessWidget {
@@ -160,18 +158,10 @@ class AiHubScreen extends StatelessWidget {
       MaterialPageRoute(builder: (_) => const ReceiptOcrScreen()),
     );
     if (result != null && context.mounted) {
-      final transaction = Transaction(
-        id: tx.generateNewId(),
-        title: result.title,
-        amount: result.amount ?? 0,
-        category: result.category.isNotEmpty ? result.category : '기타',
-        type: 'expense',
-        date: DateTime.now(),
-      );
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AddTransactionScreen(editTransaction: transaction),
+          builder: (_) => AddTransactionScreen(ocrPrefill: result),
         ),
       );
     }

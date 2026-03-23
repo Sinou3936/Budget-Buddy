@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/gemini_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
 
 class AiReportScreen extends StatefulWidget {
   const AiReportScreen({super.key});

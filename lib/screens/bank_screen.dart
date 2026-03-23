@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
 
 
 class BankScreen extends StatefulWidget {
@@ -283,7 +282,6 @@ class _BankScreenState extends State<BankScreen> {
   }
 
   void _showLinkDialog(Map<String, dynamic> bank) {
-    final bankId = bank['id'] as int;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

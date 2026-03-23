@@ -248,7 +248,7 @@ class TransactionListTile extends StatelessWidget {
             ],
           ),
         ),
-        onLongPress: onDelete != null ? () => _showActionMenu(context) : null,
+        onTap: onDelete != null ? () => _showActionMenu(context) : null,
       ),
     );
   }

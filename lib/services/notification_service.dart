@@ -1,5 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+import '../models/app_notification.dart';
 
 class NotificationService {
   NotificationService._();
@@ -83,12 +85,14 @@ class NotificationService {
     final percent = ((spent / limit) * 100).toInt();
     final spentStr = _fmt(spent);
     final limitStr = _fmt(limit);
+    final title = '⚠️ $category 예산 초과';
+    final body = '$category 예산의 $percent% 사용 중 ($spentStr원 / $limitStr원)';
     await _plugin.show(
       category.hashCode.abs() % 10000,
-      '⚠️ $category 예산 초과',
-      '$category 예산의 $percent% 사용 중 ($spentStr원 / $limitStr원)',
+      title, body,
       NotificationDetails(android: _budgetChannel),
     );
+    await _save(NotificationType.budget, title, body);
   }
 
   // ─── 이상 지출 감지 알림 ─────────────────────────────────
@@ -98,23 +102,76 @@ class NotificationService {
     required String explanation,
   }) async {
     if (!_anomalyEnabled) return;
+    final title = '🔍 $category 이상 지출 감지';
     await _plugin.show(
       9001,
-      '🔍 $category 이상 지출 감지',
-      explanation,
+      title, explanation,
       NotificationDetails(android: _anomalyChannel),
     );
+    await _save(NotificationType.anomaly, title, explanation);
   }
 
   // ─── AI 월말 리포트 준비 알림 ────────────────────────────
   static Future<void> showMonthlyReportReady() async {
     if (!_reportEnabled) return;
+    const title = '📊 AI 월말 리포트 준비 완료';
+    const body = '이번 달 소비 분석 리포트가 작성됐습니다. 확인해보세요!';
     await _plugin.show(
-      9002,
-      '📊 AI 월말 리포트 준비 완료',
-      '이번 달 소비 분석 리포트가 작성됐습니다. 확인해보세요!',
+      9002, title, body,
       NotificationDetails(android: _reportChannel),
     );
+    await _save(NotificationType.report, title, body);
+  }
+
+  // ─── 알림 내역 저장/조회 ─────────────────────────────────
+  static const _prefKey = 'notification_history';
+  static const _uuid = Uuid();
+
+  static Future<void> _save(NotificationType type, String title, String body) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_prefKey);
+    final list = existing != null ? AppNotification.listFromJson(existing) : <AppNotification>[];
+    list.insert(0, AppNotification(
+      id: _uuid.v4(),
+      type: type,
+      title: title,
+      body: body,
+      createdAt: DateTime.now(),
+    ));
+    // 최대 50개 유지
+    if (list.length > 50) list.removeRange(50, list.length);
+    await prefs.setString(_prefKey, AppNotification.listToJson(list));
+  }
+
+  static Future<List<AppNotification>> getHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_prefKey);
+    if (data == null) return [];
+    return AppNotification.listFromJson(data);
+  }
+
+  static Future<int> getUnreadCount() async {
+    final list = await getHistory();
+    return list.where((n) => !n.isRead).length;
+  }
+
+  static Future<void> markAllRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await getHistory();
+    final updated = list.map((n) => n.copyWith(isRead: true)).toList();
+    await prefs.setString(_prefKey, AppNotification.listToJson(updated));
+  }
+
+  static Future<void> deleteOne(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await getHistory();
+    list.removeWhere((n) => n.id == id);
+    await prefs.setString(_prefKey, AppNotification.listToJson(list));
+  }
+
+  static Future<void> clearHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKey);
   }
 
   // ─── 내부 헬퍼 ───────────────────────────────────────────

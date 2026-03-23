@@ -11,7 +11,9 @@ import '../models/ocr_result.dart';
 class AddTransactionScreen extends StatefulWidget {
   /// 수정 시 기존 거래를 전달, null이면 새 거래 추가 모드
   final Transaction? editTransaction;
-  const AddTransactionScreen({super.key, this.editTransaction});
+  /// OCR 결과로 필드를 미리 채울 때 사용 (새 거래 추가 모드 유지)
+  final OcrResult? ocrPrefill;
+  const AddTransactionScreen({super.key, this.editTransaction, this.ocrPrefill});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -47,6 +49,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _titleController.text  = edit.title;
       _amountController.text = edit.amount.toInt().toString();
       _memoController.text   = edit.memo ?? '';
+    }
+    final ocr = widget.ocrPrefill;
+    if (ocr != null) {
+      if (ocr.title.isNotEmpty) _titleController.text = ocr.title;
+      if (ocr.amount != null && ocr.amount! > 0) {
+        _amountController.text = ocr.amount!.toInt().toString();
+      }
+      if (ocr.category.isNotEmpty) {
+        _selectedCategory = ocr.category;
+        _aiCategory = ocr.category;
+      }
     }
     _tabController = TabController(
       length: 2,
