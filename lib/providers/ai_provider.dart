@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
-import '../providers/transaction_provider.dart';
+import '../models/transaction.dart';
 import '../services/gemini_service.dart';
 
-class GeminiProvider extends ChangeNotifier {
+class AiProvider extends ChangeNotifier {
   final _uuid = const Uuid();
 
   final List<ChatMessage> _chatHistory = [];
@@ -24,8 +24,13 @@ class GeminiProvider extends ChangeNotifier {
   bool get isBudgetLoading => _isBudgetLoading;
   String? get error => _error;
 
-  // ─── 챗봇 ────────────────────────────────────────────────
-  Future<void> sendMessage(String text, TransactionProvider txProvider) async {
+  Future<void> sendMessage({
+    required String text,
+    required List<Transaction> transactions,
+    required List<Budget> budgets,
+    required double income,
+    required double expense,
+  }) async {
     if (text.trim().isEmpty) return;
 
     _chatHistory.add(ChatMessage(
@@ -39,10 +44,10 @@ class GeminiProvider extends ChangeNotifier {
 
     final reply = await GeminiService.instance.chat(
       message: text,
-      transactions: txProvider.currentMonthTransactions,
-      budgets: txProvider.budgets,
-      income: txProvider.totalIncome,
-      expense: txProvider.totalExpense,
+      transactions: transactions,
+      budgets: budgets,
+      income: income,
+      expense: expense,
     );
 
     _chatHistory.add(ChatMessage(
@@ -60,20 +65,25 @@ class GeminiProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── 월말 리포트 ──────────────────────────────────────────
-  Future<void> generateReport(TransactionProvider txProvider) async {
+  Future<void> generateReport({
+    required int year,
+    required int month,
+    required List<Transaction> transactions,
+    required List<Budget> budgets,
+    required double totalIncome,
+    required double totalExpense,
+  }) async {
     _isReportLoading = true;
     _error = null;
     notifyListeners();
 
-    final now = DateTime.now();
     _monthlyReport = await GeminiService.instance.generateMonthlyReport(
-      year: now.year,
-      month: now.month,
-      transactions: txProvider.currentMonthTransactions,
-      budgets: txProvider.budgets,
-      totalIncome: txProvider.totalIncome,
-      totalExpense: txProvider.totalExpense,
+      year: year,
+      month: month,
+      transactions: transactions,
+      budgets: budgets,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
     );
 
     if (_monthlyReport.isEmpty) {
@@ -83,20 +93,19 @@ class GeminiProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── 예산 추천 ────────────────────────────────────────────
-  Future<void> fetchBudgetSuggestions(TransactionProvider txProvider) async {
+  Future<void> fetchBudgetSuggestions({
+    required List<Transaction> transactions,
+    required Map<String, double> currentBudgets,
+    required double monthlyIncome,
+  }) async {
     _isBudgetLoading = true;
     _error = null;
     notifyListeners();
 
-    final currentBudgets = {
-      for (final b in txProvider.budgets) b.category: b.limit
-    };
-
     _suggestedBudgets = await GeminiService.instance.suggestBudgets(
-      transactions: txProvider.currentMonthTransactions,
+      transactions: transactions,
       currentBudgets: currentBudgets,
-      monthlyIncome: txProvider.totalIncome > 0 ? txProvider.totalIncome : 3000000,
+      monthlyIncome: monthlyIncome > 0 ? monthlyIncome : 3000000,
     );
 
     if (_suggestedBudgets.isEmpty) {

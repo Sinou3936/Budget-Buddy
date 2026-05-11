@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/gemini_provider.dart';
+import '../providers/ai_provider.dart';
+import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -16,17 +17,27 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final gemini = context.read<GeminiProvider>();
+      final gemini = context.read<AiProvider>();
       if (gemini.suggestedBudgets.isEmpty && !gemini.isBudgetLoading) {
-        gemini.fetchBudgetSuggestions(context.read<TransactionProvider>());
+        _fetchSuggestions(gemini);
       }
     });
   }
 
+  void _fetchSuggestions(AiProvider gemini) {
+    final tx = context.read<TransactionProvider>();
+    final budget = context.read<BudgetProvider>();
+    gemini.fetchBudgetSuggestions(
+      transactions: tx.currentMonthTransactions,
+      currentBudgets: {for (final b in budget.budgets) b.category: b.limit},
+      monthlyIncome: tx.totalIncome,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer2<GeminiProvider, TransactionProvider>(
-      builder: (context, gemini, tx, _) {
+    return Consumer2<AiProvider, BudgetProvider>(
+      builder: (context, gemini, budget, _) {
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
@@ -76,8 +87,8 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
                   child: gemini.isBudgetLoading
                       ? _buildLoading()
                       : gemini.suggestedBudgets.isEmpty
-                          ? _buildEmpty(gemini, tx)
-                          : _buildSuggestions(gemini, tx),
+                          ? _buildEmpty(gemini)
+                          : _buildSuggestions(gemini, budget),
                 ),
               ),
             ],
@@ -101,7 +112,7 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
     );
   }
 
-  Widget _buildEmpty(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildEmpty(AiProvider gemini) {
     return SizedBox(
       height: 400,
       child: Column(
@@ -112,7 +123,7 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
           Text(gemini.error ?? '예산 추천을 받아보세요', style: const TextStyle(color: AppTheme.textSecondary)),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () => gemini.fetchBudgetSuggestions(tx),
+            onPressed: () => _fetchSuggestions(gemini),
             icon: const Icon(Icons.auto_awesome),
             label: const Text('예산 추천 받기'),
             style: ElevatedButton.styleFrom(
@@ -126,9 +137,9 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
     );
   }
 
-  Widget _buildSuggestions(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildSuggestions(AiProvider gemini, BudgetProvider budget) {
     final suggestions = gemini.suggestedBudgets;
-    final currentBudgets = {for (final b in tx.budgets) b.category: b.limit};
+    final currentBudgets = {for (final b in budget.budgets) b.category: b.limit};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +174,7 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
             current: current,
             suggested: suggested,
             diff: diff,
-            onApply: () => tx.updateBudget(entry.key, suggested),
+            onApply: () => budget.updateBudget(entry.key, suggested),
           );
         }),
         const SizedBox(height: 16),
@@ -173,7 +184,7 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
           child: ElevatedButton(
             onPressed: () async {
               for (final entry in suggestions.entries) {
-                await tx.updateBudget(entry.key, entry.value);
+                await budget.updateBudget(entry.key, entry.value);
               }
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +209,7 @@ class _BudgetSuggestScreenState extends State<BudgetSuggestScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => gemini.fetchBudgetSuggestions(tx),
+            onPressed: () => _fetchSuggestions(gemini),
             icon: const Icon(Icons.refresh),
             label: const Text('다시 추천받기'),
             style: OutlinedButton.styleFrom(

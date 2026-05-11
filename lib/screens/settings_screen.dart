@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
+import '../providers/app_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
@@ -16,7 +17,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
+    return Consumer<AppProvider>(
       builder: (context, provider, _) {
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
@@ -88,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   // ignore: unused_element
-  Widget _buildPremiumCard(BuildContext context, TransactionProvider provider) {
+  Widget _buildPremiumCard(BuildContext context, AppProvider provider) {
     return GestureDetector(
       onTap: () => _showPremiumDialog(context, provider),
       child: Container(
@@ -246,9 +247,9 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _exportCsv(BuildContext context, TransactionProvider provider) async {
+  Future<void> _exportCsv(BuildContext context, AppProvider provider) async {
     try {
-      final transactions = provider.transactions;
+      final transactions = context.read<TransactionProvider>().transactions;
       if (transactions.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('내보낼 거래 내역이 없습니다.'), behavior: SnackBarBehavior.floating),
@@ -431,7 +432,7 @@ Budget Buddy(이하 "앱")는 다음의 목적을 위하여 개인정보를 처�
   }
 
   void _showPremiumDialog(
-      BuildContext context, TransactionProvider provider) {
+      BuildContext context, AppProvider provider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -441,7 +442,7 @@ Budget Buddy(이하 "앱")는 다음의 목적을 위하여 개인정보를 처�
   }
 
   // ── DEV 전용 개발자 패널 ─────────────────────────────────────
-  Widget _buildDevPanel(BuildContext context, TransactionProvider provider) {
+  Widget _buildDevPanel(BuildContext context, AppProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -625,7 +626,7 @@ Budget Buddy(이하 "앱")는 다음의 목적을 위하여 개인정보를 처�
     );
   }
 
-  void _showApiConfigDialog(BuildContext context, TransactionProvider provider) {
+  void _showApiConfigDialog(BuildContext context, AppProvider provider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -697,7 +698,7 @@ class _SettingsItem {
 }
 
 class _PremiumBottomSheet extends StatefulWidget {
-  final TransactionProvider provider;
+  final AppProvider provider;
   const _PremiumBottomSheet({required this.provider});
 
   @override

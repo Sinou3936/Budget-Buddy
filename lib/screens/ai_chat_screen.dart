@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/gemini_provider.dart';
+import '../providers/ai_provider.dart';
+import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../models/chat_message.dart';
 import '../theme/app_theme.dart';
@@ -36,17 +37,24 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
   }
 
-  Future<void> _send(GeminiProvider gemini, TransactionProvider tx, {String? quickText}) async {
+  Future<void> _send(AiProvider gemini, TransactionProvider tx, {String? quickText}) async {
     final text = quickText ?? _controller.text.trim();
     if (text.isEmpty || gemini.isChatLoading) return;
     _controller.clear();
-    await gemini.sendMessage(text, tx);
+    final budget = context.read<BudgetProvider>();
+    await gemini.sendMessage(
+      text: text,
+      transactions: tx.currentMonthTransactions,
+      budgets: budget.budgets,
+      income: tx.totalIncome,
+      expense: tx.totalExpense,
+    );
     _scrollToBottom();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<GeminiProvider, TransactionProvider>(
+    return Consumer2<AiProvider, TransactionProvider>(
       builder: (context, gemini, tx, _) {
         _scrollToBottom();
         return Scaffold(
@@ -215,7 +223,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
-  Widget _buildQuickButtons(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildQuickButtons(AiProvider gemini, TransactionProvider tx) {
     final questions = ['이번 달 얼마 썼어?', '어디서 가장 많이 썼어?', '절약 팁 알려줘'];
     return SizedBox(
       height: 40,
@@ -234,7 +242,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
-  Widget _buildInputBar(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildInputBar(AiProvider gemini, TransactionProvider tx) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(

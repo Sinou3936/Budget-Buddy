@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
@@ -17,6 +18,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
       builder: (context, provider, _) {
+        final budget = context.watch<BudgetProvider>();
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
@@ -65,7 +67,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       const SizedBox(height: 20),
                       _buildBarChart(provider),
                       const SizedBox(height: 20),
-                      _buildAiInsightsAll(provider),
+                      _buildAiInsightsAll(budget),
                       const SizedBox(height: 20),
                       _buildTopSpending(provider),
                       const SizedBox(height: 80),
@@ -307,8 +309,8 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildAiInsightsAll(TransactionProvider provider) {
-    if (provider.insights.isEmpty) return const SizedBox.shrink();
+  Widget _buildAiInsightsAll(BudgetProvider budget) {
+    if (budget.insights.isEmpty) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -353,7 +355,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${provider.insights.length}개',
+                  '${budget.insights.length}개',
                   style: const TextStyle(
                       fontSize: 12,
                       color: AppTheme.primaryBlue,
@@ -363,7 +365,7 @@ class _StatsScreenState extends State<StatsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ...provider.insights.map((i) => AiInsightCard(insight: i)),
+          ...budget.insights.map((i) => AiInsightCard(insight: i)),
         ],
       ),
     );

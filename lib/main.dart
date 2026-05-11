@@ -4,8 +4,11 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'theme/app_theme.dart';
+import 'providers/app_provider.dart';
 import 'providers/transaction_provider.dart';
-import 'providers/gemini_provider.dart';
+import 'providers/budget_provider.dart';
+import 'providers/bank_provider.dart';
+import 'providers/ai_provider.dart';
 import 'screens/add_transaction_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/transaction_list_screen.dart';
@@ -27,8 +30,6 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
-  // AdMob 초기화 (DEV에서는 테스트 ID 사용, PROD에서는 실제 ID)
-  // Web 환경에서는 AdMob 미지원이므로 Android에서만 초기화
   if (!AppEnv.useMockAds) {
     await MobileAds.instance.initialize();
   }
@@ -45,8 +46,28 @@ class BudgetBuddyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => GeminiProvider()),
+        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProxyProvider<AppProvider, TransactionProvider>(
+          create: (_) => TransactionProvider(),
+          update: (_, app, tx) => tx!..update(app.userId),
+        ),
+        ChangeNotifierProxyProvider2<AppProvider, TransactionProvider, BudgetProvider>(
+          create: (_) => BudgetProvider(),
+          update: (_, app, tx, budget) => budget!
+            ..update(
+              userId: app.userId,
+              categoryExpenses: tx.categoryExpenses,
+              currentMonthTransactions: tx.currentMonthTransactions,
+              totalIncome: tx.totalIncome,
+              totalExpense: tx.totalExpense,
+              appConfig: app.appConfig,
+            ),
+        ),
+        ChangeNotifierProxyProvider<AppProvider, BankProvider>(
+          create: (_) => BankProvider(),
+          update: (_, app, bank) => bank!..update(app.userId),
+        ),
+        ChangeNotifierProvider(create: (_) => AiProvider()),
       ],
       child: DevEnvBanner(
         child: MaterialApp(
@@ -86,8 +107,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-      builder: (context, provider, _) {
+    return Consumer<AppProvider>(
+      builder: (context, app, _) {
         return Scaffold(
           body: IndexedStack(
             index: _currentIndex,
@@ -115,9 +136,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 광고 배너 (수익화 - 무료 플랜)
-              AdBannerWidget(isPremium: provider.isPremium),
-              // 하단 네비게이션
+              AdBannerWidget(isPremium: app.isPremium),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../providers/transaction_provider.dart';
+import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 
 class BudgetSettingsScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _BudgetSettingsScreenState extends State<BudgetSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    final provider = context.read<TransactionProvider>();
+    final provider = context.read<BudgetProvider>();
     for (final cat in _categories) {
       final budget = provider.budgets.where((b) => b.category == cat).firstOrNull;
       _controllers[cat] = TextEditingController(
@@ -39,7 +39,7 @@ class _BudgetSettingsScreenState extends State<BudgetSettingsScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final provider = context.read<TransactionProvider>();
+    final provider = context.read<BudgetProvider>();
     for (final cat in _categories) {
       final text = _controllers[cat]?.text.trim() ?? '';
       final value = double.tryParse(text) ?? 0;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../providers/app_provider.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import 'notification_screen.dart';
@@ -24,7 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadUnreadCount();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().loadData().then((_) {
+      context.read<AppProvider>().loadData().then((_) {
         _checkAiAlerts();
       });
     });
@@ -36,7 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _checkAiAlerts() {
-    final provider = context.read<TransactionProvider>();
+    final provider = context.read<BudgetProvider>();
     final warnings = provider.insights.where((i) => i.type == 'warning').toList();
     if (warnings.isNotEmpty && mounted) {
       Future.delayed(const Duration(milliseconds: 800), () {
@@ -117,8 +119,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) {
+      builder: (context, tx, _) {
+        final app = context.watch<AppProvider>();
+        final budget = context.watch<BudgetProvider>();
+
+        if (app.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -128,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
             slivers: [
-              if (provider.isOffline)
+              if (app.isOffline)
                 SliverToBoxAdapter(
                   child: Container(
                     color: Colors.orange,
@@ -147,22 +152,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-              _buildSliverHeader(provider),
+              _buildSliverHeader(tx),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildQuickStats(provider),
+                      _buildQuickStats(tx, budget),
                       const SizedBox(height: 20),
-                      _buildAiInsightSection(provider),
+                      _buildAiInsightSection(budget),
                       const SizedBox(height: 20),
-                      _buildCategoryChart(provider),
+                      _buildCategoryChart(tx),
                       const SizedBox(height: 20),
-                      _buildBudgetSection(provider),
+                      _buildBudgetSection(budget),
                       const SizedBox(height: 20),
-                      _buildRecentTransactions(provider),
+                      _buildRecentTransactions(tx),
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -175,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSliverHeader(TransactionProvider provider) {
+  Widget _buildSliverHeader(TransactionProvider tx) {
     final now = DateTime.now();
     final months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
@@ -256,16 +261,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(height: 4),
                   Text(
-                    _formatAmount(provider.totalBalance),
+                    _formatAmount(tx.totalBalance),
                     style: const TextStyle(
                         color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Flexible(child: _buildHeaderStat('수입', provider.totalIncome, AppTheme.accentTeal)),
+                      Flexible(child: _buildHeaderStat('수입', tx.totalIncome, AppTheme.accentTeal)),
                       const SizedBox(width: 20),
-                      Flexible(child: _buildHeaderStat('지출', provider.totalExpense, const Color(0xFFFF8A80))),
+                      Flexible(child: _buildHeaderStat('지출', tx.totalExpense, const Color(0xFFFF8A80))),
                     ],
                   ),
                 ],
@@ -306,9 +311,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickStats(TransactionProvider provider) {
-    final expenseRatio = provider.totalIncome > 0
-        ? (provider.totalExpense / provider.totalIncome * 100).toStringAsFixed(0)
+  Widget _buildQuickStats(TransactionProvider tx, BudgetProvider budget) {
+    final expenseRatio = tx.totalIncome > 0
+        ? (tx.totalExpense / tx.totalIncome * 100).toStringAsFixed(0)
         : '0';
 
     return Row(
@@ -316,7 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildStatCard(
             '거래 건수',
-            '${provider.currentMonthTransactions.length}건',
+            '${tx.currentMonthTransactions.length}건',
             Icons.receipt_long,
             AppTheme.primaryBlue,
           ),
@@ -327,7 +332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             '지출 비율',
             '$expenseRatio%',
             Icons.pie_chart,
-            provider.totalExpense / (provider.totalIncome > 0 ? provider.totalIncome : 1) > 0.8
+            tx.totalExpense / (tx.totalIncome > 0 ? tx.totalIncome : 1) > 0.8
                 ? AppTheme.dangerRed
                 : AppTheme.successGreen,
           ),
@@ -336,7 +341,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildStatCard(
             'AI 인사이트',
-            '${provider.insights.length}개',
+            '${budget.insights.length}개',
             Icons.auto_awesome,
             AppTheme.warningOrange,
           ),
@@ -386,8 +391,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAiInsightSection(TransactionProvider provider) {
-    if (provider.insights.isEmpty) return const SizedBox.shrink();
+  Widget _buildAiInsightSection(BudgetProvider budget) {
+    if (budget.insights.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,15 +419,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...provider.insights
+        ...budget.insights
             .take(2)
             .map((i) => AiInsightCard(insight: i)),
       ],
     );
   }
 
-  Widget _buildCategoryChart(TransactionProvider provider) {
-    final expenses = provider.categoryExpenses;
+  Widget _buildCategoryChart(TransactionProvider tx) {
+    final expenses = tx.categoryExpenses;
     if (expenses.isEmpty) return const SizedBox.shrink();
 
     final sections = <PieChartSectionData>[];
@@ -430,7 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     expenses.forEach((category, amount) {
       final color = AppTheme.categoryColors[category] ?? Colors.grey;
       final percentage =
-          provider.totalExpense > 0 ? amount / provider.totalExpense * 100 : 0;
+          tx.totalExpense > 0 ? amount / tx.totalExpense * 100 : 0;
       sections.add(PieChartSectionData(
         value: amount,
         title: percentage > 8 ? '${percentage.toStringAsFixed(0)}%' : '',
@@ -533,8 +538,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBudgetSection(TransactionProvider provider) {
-    if (provider.budgets.isEmpty) return const SizedBox.shrink();
+  Widget _buildBudgetSection(BudgetProvider budget) {
+    if (budget.budgets.isEmpty) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -558,9 +563,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary)),
           const SizedBox(height: 14),
-          ...provider.budgets.map((budget) {
-            final color = AppTheme.categoryColors[budget.category] ?? Colors.blue;
-            final isOver = budget.isOverBudget;
+          ...budget.budgets.map((b) {
+            final color = AppTheme.categoryColors[b.category] ?? Colors.blue;
+            final isOver = b.isOverBudget;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Column(
@@ -572,7 +577,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Flexible(
                         flex: 2,
                         child: Text(
-                          budget.category,
+                          b.category,
                           style: const TextStyle(
                               fontSize: 13,
                               color: AppTheme.textPrimary,
@@ -584,7 +589,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Flexible(
                         flex: 3,
                         child: Text(
-                          '${_formatAmount(budget.spent)} / ${_formatAmount(budget.limit)}',
+                          '${_formatAmount(b.spent)} / ${_formatAmount(b.limit)}',
                           style: TextStyle(
                               fontSize: 12,
                               color: isOver
@@ -602,7 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: budget.percentage,
+                      value: b.percentage,
                       backgroundColor: color.withValues(alpha: 0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(
                           isOver ? AppTheme.dangerRed : color),
@@ -618,8 +623,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentTransactions(TransactionProvider provider) {
-    final transactions = provider.currentMonthTransactions.take(5).toList();
+  Widget _buildRecentTransactions(TransactionProvider tx) {
+    final transactions = tx.currentMonthTransactions.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

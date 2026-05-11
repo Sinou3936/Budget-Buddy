@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/gemini_provider.dart';
+import '../providers/ai_provider.dart';
+import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -16,18 +17,32 @@ class _AiReportScreenState extends State<AiReportScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final gemini = context.read<GeminiProvider>();
+      final gemini = context.read<AiProvider>();
       if (gemini.monthlyReport.isEmpty && !gemini.isReportLoading) {
-        gemini.generateReport(context.read<TransactionProvider>());
+        _generateReport(gemini);
       }
     });
+  }
+
+  void _generateReport(AiProvider gemini) {
+    final tx = context.read<TransactionProvider>();
+    final budget = context.read<BudgetProvider>();
+    final now = DateTime.now();
+    gemini.generateReport(
+      year: now.year,
+      month: now.month,
+      transactions: tx.currentMonthTransactions,
+      budgets: budget.budgets,
+      totalIncome: tx.totalIncome,
+      totalExpense: tx.totalExpense,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    return Consumer2<GeminiProvider, TransactionProvider>(
-      builder: (context, gemini, tx, _) {
+    return Consumer<AiProvider>(
+      builder: (context, gemini, _) {
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
@@ -77,8 +92,8 @@ class _AiReportScreenState extends State<AiReportScreen> {
                   child: gemini.isReportLoading
                       ? _buildLoading()
                       : gemini.monthlyReport.isEmpty
-                          ? _buildEmpty(gemini, tx)
-                          : _buildReport(gemini, tx),
+                          ? _buildEmpty(gemini)
+                          : _buildReport(gemini),
                 ),
               ),
             ],
@@ -104,7 +119,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
     );
   }
 
-  Widget _buildEmpty(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildEmpty(AiProvider gemini) {
     return SizedBox(
       height: 400,
       child: Column(
@@ -115,7 +130,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
           Text(gemini.error ?? '리포트를 생성해주세요', style: const TextStyle(color: AppTheme.textSecondary)),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () => gemini.generateReport(tx),
+            onPressed: () => _generateReport(gemini),
             icon: const Icon(Icons.auto_awesome),
             label: const Text('리포트 생성'),
             style: ElevatedButton.styleFrom(
@@ -129,7 +144,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
     );
   }
 
-  Widget _buildReport(GeminiProvider gemini, TransactionProvider tx) {
+  Widget _buildReport(AiProvider gemini) {
     final lines = gemini.monthlyReport.split('\n');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +169,7 @@ class _AiReportScreenState extends State<AiReportScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => gemini.generateReport(tx),
+            onPressed: () => _generateReport(gemini),
             icon: const Icon(Icons.refresh),
             label: const Text('리포트 다시 생성'),
             style: OutlinedButton.styleFrom(

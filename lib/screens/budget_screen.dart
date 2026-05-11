@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import '../providers/budget_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
@@ -38,20 +40,20 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   void _fillCurrentValues() {
-    final provider = context.read<TransactionProvider>();
+    final budgetProvider = context.read<BudgetProvider>();
+    final appProvider = context.read<AppProvider>();
     for (final cat in _categories) {
-      final budget = provider.budgets.firstWhere(
+      final budget = budgetProvider.budgets.firstWhere(
         (b) => b.category == cat,
-        orElse: () => Budget(category: cat, limit: _defaultLimit(cat, provider)),
+        orElse: () => Budget(category: cat, limit: _defaultLimit(cat, appProvider)),
       );
       _controllers[cat]?.text = budget.limit.toInt().toString();
     }
     setState(() {});
   }
 
-  double _defaultLimit(String category, TransactionProvider provider) {
-    // API config의 default_budgets에서 기본값 가져오기
-    final defaults = provider.appConfig['default_budgets'];
+  double _defaultLimit(String category, AppProvider appProvider) {
+    final defaults = appProvider.appConfig['default_budgets'];
     if (defaults is List) {
       for (final d in defaults) {
         if (d['category'] == category) {
@@ -78,14 +80,14 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   Future<void> _saveAll() async {
     setState(() => _isSaving = true);
-    final provider = context.read<TransactionProvider>();
+    final budgetProvider = context.read<BudgetProvider>();
 
     int saved = 0;
     for (final cat in _categories) {
       final text = _controllers[cat]?.text ?? '0';
       final limit = double.tryParse(text.replaceAll(',', '')) ?? 0;
       if (limit >= 0) {
-        await provider.updateBudget(cat, limit);
+        await budgetProvider.updateBudget(cat, limit);
         saved++;
       }
     }
@@ -112,8 +114,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-      builder: (context, provider, _) {
+    return Consumer2<TransactionProvider, BudgetProvider>(
+      builder: (context, tx, budget, _) {
         return Scaffold(
           backgroundColor: AppTheme.backgroundLight,
           body: CustomScrollView(
@@ -162,7 +164,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _buildSummaryCard(provider),
+                  child: _buildSummaryCard(tx, budget),
                 ),
               ),
               // ── 카테고리별 예산 입력 리스트 ───────────────────
@@ -172,7 +174,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) {
                       final cat = _categories[i];
-                      return _buildBudgetItem(cat, provider);
+                      return _buildBudgetItem(cat, tx, budget);
                     },
                     childCount: _categories.length,
                   ),
@@ -222,12 +224,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   // ── 요약 카드 ────────────────────────────────────────────────
-  Widget _buildSummaryCard(TransactionProvider provider) {
+  Widget _buildSummaryCard(TransactionProvider tx, BudgetProvider budget) {
     final totalBudget = _categories.fold(0.0, (sum, cat) {
       final text = _controllers[cat]?.text ?? '0';
       return sum + (double.tryParse(text.replaceAll(',', '')) ?? 0);
     });
-    final totalSpent = provider.categoryExpenses.values
+    final totalSpent = tx.categoryExpenses.values
         .fold(0.0, (s, v) => s + v);
     final ratio = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
 
@@ -322,10 +324,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   // ── 카테고리별 예산 아이템 ────────────────────────────────────
-  Widget _buildBudgetItem(String category, TransactionProvider provider) {
+  Widget _buildBudgetItem(String category, TransactionProvider tx, BudgetProvider budget) {
     final color = AppTheme.categoryColors[category] ?? AppTheme.primaryBlue;
     final icon = AppTheme.categoryIcons[category] ?? Icons.circle;
-    final spent = provider.categoryExpenses[category] ?? 0.0;
+    final spent = tx.categoryExpenses[category] ?? 0.0;
     final limitText = _controllers[category]?.text ?? '0';
     final limit = double.tryParse(limitText.replaceAll(',', '')) ?? 0;
     final ratio = limit > 0 ? (spent / limit).clamp(0.0, 1.0) : 0.0;

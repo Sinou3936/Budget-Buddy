@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/transaction_provider.dart';
+import '../providers/app_provider.dart';
+import '../providers/bank_provider.dart';
 import '../theme/app_theme.dart';
 
 
@@ -16,7 +17,7 @@ class _BankScreenState extends State<BankScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TransactionProvider>().trackPageView('bank_screen');
+      context.read<AppProvider>().trackPageView('bank_screen');
     });
   }
 
@@ -31,11 +32,10 @@ class _BankScreenState extends State<BankScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransactionProvider>(
-      builder: (context, provider, _) {
-        // 서버에서 받아온 데이터 사용
-        final banks = provider.banks;
-        final accounts = provider.bankAccounts;
+    return Consumer2<AppProvider, BankProvider>(
+      builder: (context, app, bank, _) {
+        final banks = app.banks;
+        final accounts = bank.bankAccounts;
         final linkedBanks = banks.where((b) => _findAccount(accounts, b['name'] as String) != null).toList();
         final totalBalance = accounts.fold(0.0, (s, a) => s + ((a['balance'] as num?)?.toDouble() ?? 0.0));
 
@@ -310,10 +310,10 @@ class _BankScreenState extends State<BankScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final provider = context.read<TransactionProvider>();
-              final ok = await provider.linkBankAccount(bank['name'] as String);
+              final bankProvider = context.read<BankProvider>();
+              final ok = await bankProvider.linkBankAccount(bank['name'] as String);
               if (!context.mounted) return;
-              provider.trackPageView('bank_linked');
+              context.read<AppProvider>().trackPageView('bank_linked');
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text(ok ? '${bank['name']} 연동 완료!' : '연동에 실패했습니다. 다시 시도해주세요.'),
                 backgroundColor: ok ? AppTheme.successGreen : AppTheme.dangerRed,
@@ -341,7 +341,7 @@ class _BankScreenState extends State<BankScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<TransactionProvider>().unlinkBankAccount(accountId);
+              context.read<BankProvider>().unlinkBankAccount(accountId);
             },
             child: const Text('해제', style: TextStyle(color: AppTheme.dangerRed)),
           ),
